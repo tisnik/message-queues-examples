@@ -1,0 +1,1527 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Celery: systém implementující asynchronní fronty úloh pro Python</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Celery: systém implementující asynchronní fronty úloh pro Python</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>Druhým systémem pro správu úloh psaných v Pythonu a spouštěných asynchronně s využitím front je nástroj Celery, s jehož základním nastavením a vlastnostmi se dnes seznámíme.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Celery: systém implementující asynchronní fronty úloh pro Python</a></p>
+<p><a href="#k02">2. Brokeři podporovaní nástrojem Celery</a></p>
+<p><a href="#k03">3. Instalace Celery při použití Redisu v&nbsp;roli brokera</a></p>
+<p><a href="#k04">4. Příprava na spuštění nástroje Celery</a></p>
+<p><a href="#k05">5. Vlastní spuštění nástroje Celery</a></p>
+<p><a href="#k06">6. Nastavení počtu paralelně spuštěných workerů</a></p>
+<p><a href="#k07">7. Vložení úlohy do fronty a vykonání úlohy</a></p>
+<p><a href="#k08">8. Uložení výsledků úloh do Redisu</a></p>
+<p><a href="#k09">9. Objekt <strong>AsyncResult</strong> vrácený po zavolání <strong>xxx.delay()</strong></a></p>
+<p><a href="#k10">10. Naplánování úlohy a přečtení výsledků</a></p>
+<p><a href="#k11">11. Konfigurace workerů</a></p>
+<p><a href="#k12">12. Chování systému při spuštění většího množství úloh</a></p>
+<p><a href="#k13">13. Řetězec několika úloh, které na sobě závisí</a></p>
+<p><a href="#k14">14. Výsledky zřetězeného spouštění úloh</a></p>
+<p><a href="#k15">15. Zjištění aktuálních informací o stavu systému front</a></p>
+<p><a href="#k16">16. Příkaz <strong>celery inspect</strong></a></p>
+<p><a href="#k17">17. Obsah další části a poznámka na závěr</a></p>
+<p><a href="#k18">18. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k19">19. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Celery: systém implementující asynchronní fronty úloh pro Python</h2>
+
+<p><a
+href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">V&nbsp;předchozím
+článku</a> jsme se věnovali popisu užitečného nástroje <i>Redis Queue (RQ)</i>,
+který slouží pro vytváření a konfiguraci takzvaných úloh (zde se ovšem používá
+termín <i>job</i>, nikoli <i>task</i>), které jsou ukládány do zvolené
+(pojmenované) fronty. Následně si úlohy z&nbsp;fronty vyzvedává takzvaný
+<i>worker</i>, který zadanou úlohu zpracuje a uloží případný výsledek do
+Redisu, odkud si tento výsledek může kdokoli, kdo zná identifikátor úlohy,
+přečíst. Samotná úloha (<i>job</i>) přitom v&nbsp;kontextu nástroje <i>Redis
+Queue</i> není vůbec nic složitého &ndash; jedná se totiž o pouhé určení funkce
+(a jejích parametrů) implementované v&nbsp;Pythonu a přímo volané
+z&nbsp;workeru (ono přímé volání ovšem pochopitelně vyžaduje inicializaci
+interpretru programovacího jazyka Python atd.).</p>
+
+<p><div class="rs-tip-major">Poznámka: většinou po workerech spíše vyžadujeme
+provedení nějakého vedlejšího efektu (poslání e-mailu, zápis transakce do
+databáze atd. atd.), než výpočet výsledku.</div></p>
+
+<p>Dnes si popíšeme sice podobně koncipovaný, ovšem v&nbsp;mnoha ohledech
+odlišný nástroj, který se jmenuje <i>Celery</i>. Tento nástroj je opět určený
+pro vývojáře používající programovací jazyk Python a znovu se jedná o systém
+určený pro konfiguraci a použití front úloh. Ovšem zatímco <i>Redis Queue</i>
+byl určen spíše pro přímočaré použití front, kde se nevyžadovala větší
+flexibilita, je tomu v&nbsp;případě <i>Celery</i> poněkud jinak, neboť tento
+nástroj umožňuje konfiguraci a modifikaci všech svých částí, u vybraných
+brokerů podporuje sledování systému (monitoring) popř.&nbsp;takzvané vzdálené
+ovládání workerů (<i>remote control</i>). Podporuje taktéž systém událostí
+(<i>events</i>). Navíc není <i>Celery</i> vázán pouze na jedinou implementaci
+front (přesněji na takzvaného <i>brokera</i>), ale je možné si podle potřeb
+vybrat z&nbsp;několika brokerů, a to včetně <a
+href="https://aws.amazon.com/sqs/">Amazonu SQS</a> apod.</p>
+
+<p><div class="rs-tip-major">Poznámka: to, že je nástroj Redis Queue interně
+mnohem jednodušší, s&nbsp;sebou samozřejmě přináší i některé výhody, protože
+případné modifikace tohoto projektu jsou snadnější. Skutečně záleží na povaze
+řešené úlohy, který systém si vyberete. Navíc je nutno poznamenat, že pokud od
+Celery nebudeme vyžadovat složitější konfiguraci či chování, je jeho nastavení
+prakticky stejně rychlé, jako u Redis Queue.</div></p>
+
+<a href="https://www.root.cz/obrazek/347323/"><img src="https://i.iinfo.cz/images/368/rq-1.png" class="image-347323" alt="&#160;" width="309" height="135" /></a>
+<p><i>Obrázek 1: Typická konfigurace systému s&nbsp;frontami úloh. Zde se
+konkrétně používá jediná fronta nazvaná &bdquo;default&ldquo;, do které se
+mohou úlohy přidávat několika programy (těch může být libovolné množství).
+Samotné zpracování úloh je reprezentováno ve workerech, kterých taktéž může být
+libovolné množství podle požadavků aplikace, dostupných zdrojů atd. atd. Navíc
+je možné, aby v&nbsp;systému existovalo větší množství pojmenovaných front.
+Fronty je tak možné rozdělit podle priority, typu zpracovávaných úloh apod.
+Existuje dokonce jedna fronta, do níž se ukládají ty úlohy, na nichž worker
+zhavaroval. V&nbsp;systému Celery se výchozí fronta jmenuje
+&bdquo;celery&ldquo;, princip je však zachován.</i></p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Brokeři podporovaní nástrojem Celery</h2>
+
+<p>Již v&nbsp;úvodní kapitole jsem se zmínil o tom, že nástroj <i>Celery</i> je
+možné provozovat s&nbsp;různými <i>brokery</i>. Pod tímto názvem si můžeme
+představit především vlastní implementaci fronty (či front), která může být
+doplněna o další pomocné a administrační nástroje (konfigurace front, sledování
+aktuálního stavu front, load balancing, clustering atd.). V&nbsp;současnosti
+jsou plně podporování tři brokeři a jeden broker je ve stavu experimentálního
+použití. Pravděpodobně nejpoužívanější je <i>RabbitMQ</i>, ovšem setkat se
+můžeme i s&nbsp;použitím nám již známého <i>Redisu</i> či dokonce <i>Amazonu
+SQS</i>, který je součástí <i>Amazon Web Services</i> (AWS je ovšem téma na
+samostatný článek). V&nbsp;následující tabulce je vypsáno, které vlastnosti
+Celery jsou jednotlivými brokery podporovány a které nikoli:</p>
+
+<table>
+<tr><th>Broker</th><th>Současný stav</th><th>Monitoring</th><th>Vzdálené ovládání workerů</th></tr>
+<tr><td><a href="https://www.rabbitmq.com/">RabbitMQ</a></td><td>stabilní</td><td>&#x2713;</td><td>&#x2713;</td></tr>
+<tr><td><a href="https://redis.io/">Redis</a></td><td>stabilní</td><td>&#x2713;</td><td>&#x2713;</td></tr>
+<tr><td><a href="https://aws.amazon.com/sqs/">Amazon SQS</a></td><td>stabilní</td><td>&times;</td><td>&times;</td></tr>
+<tr><td><a href="https://zookeeper.apache.org/">Apache Zookeeper</a></td><td>experimentální</td><td>&times;</td><td>&times;</td></tr>
+</table>
+
+<p><div class="rs-tip-major">Poznámka: kromě termínu <i>broker</i> se můžeme
+setkat i s&nbsp;plným označením <i>message broker</i> nebo <i>queue
+manager</i>. V&nbsp;tomto článku však budu stručně používat pouze název
+<i>broker</i>.</div></p>
+
+<p>Kromě vlastních brokerů je možné nastavit i systém, do kterého se ukládají
+výsledky práce workerů. Opět se může jednat o Redis, ovšem nakonfigurovat je
+možné například i Cassandru, CouchDB, Elastic Search apod. V&nbsp;případě
+potřeby se dá využít i přímo souborový systém (sdílený všemi servery
+s&nbsp;workery).</p>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Instalace Celery při použití Redisu v&nbsp;roli brokera</h2>
+
+<p>V&nbsp;dalším textu si ukážeme způsob použití nástroje <i>Celery</i>
+společně s&nbsp;Redisem, který bude použit jak v&nbsp;roli brokera, tak i
+v&nbsp;roli <i>backendu</i> sloužícího pro uložení výsledků workerů (obecně je
+ovšem role brokera a backendu oddělena a používají se pro ni odlišné nástroje).
+Všechny dále uvedené příklady ovšem budou funkční i s&nbsp;jinými brokery, bude
+se odlišovat pouze volání konstruktoru třídy <strong>Celery</strong> (viz další
+kapitoly).</p>
+
+<p>Samotná instalace nástroje <i>Celery</i> bude probíhat prakticky stejným
+způsobem, jako <a
+href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">instalace
+nástroje <i>Redis Queue</i></a>. Lišit se bude pouze specifikace balíčku,
+protože budeme potřebovat nainstalovat <i>variantu</i> Celery s&nbsp;podporou
+Redisu (viz též <a
+href="https://setuptools.readthedocs.io/en/latest/setuptools.html#declaring-extras-optional-features-with-their-own-dependencies">popis
+konfigurace balíčku</a>). Vzhledem k&nbsp;tomu, že jsou použity hranaté
+závorky, je bezpečnější celý název balíčku umístit do uvozovek, aby nedošlo
+k&nbsp;nechtěné expanzi zadaného názvu shellem:</p>
+
+<pre>
+$ <strong>pip3 install --user "celery[redis]"</strong>
+</pre>
+
+<p>Samotný průběh instalace je již plně v&nbsp;rukou nástroje
+<strong>pip</strong>:</p>
+
+<pre>
+Collecting celery[redis]
+  Downloading https://files.pythonhosted.org/packages/e8/58/2a0b1067ab2c12131b5c089dfc579467c76402475c5231095e36a43b749c/celery-4.2.1-py2.py3-none-any.whl (401kB)
+    100% |████████████████████████████████| 409kB 1.6MB/s 
+Collecting kombu<5.0,>=4.2.0 (from celery[redis])
+  Downloading https://files.pythonhosted.org/packages/97/61/65838c7da048e56d549e358ac19c0979c892e17dc6186610c49531d35b70/kombu-4.2.1-py2.py3-none-any.whl (177kB)
+    100% |████████████████████████████████| 184kB 2.4MB/s 
+Collecting billiard<3.6.0,>=3.5.0.2 (from celery[redis])
+  Downloading https://files.pythonhosted.org/packages/87/ac/9b3cc065557ad5769d0626fd5dba0ad1cb40e3a72fe6acd3d081b4ad864e/billiard-3.5.0.4.tar.gz (150kB)
+    100% |████████████████████████████████| 153kB 2.7MB/s 
+Requirement already satisfied: pytz&gt;dev in /usr/lib/python3.6/site-packages (from celery[redis])
+Requirement already satisfied: redis&gt;=2.10.5; extra == "redis" in /home/tester/.local/lib/python3.6/site-packages (from celery[redis])
+Collecting amqp&lt;3.0,&gt;=2.1.4 (from kombu&lt;5.0,&gt;=4.2.0-&gt;celery[redis])
+  Downloading https://files.pythonhosted.org/packages/7f/cf/12d4611fc67babd4ae250c9e8249c5650ae1933395488e9e7e3562b4ff24/amqp-2.3.2-py2.py3-none-any.whl (48kB)
+    100% |████████████████████████████████| 51kB 4.2MB/s 
+Collecting vine&gt;=1.1.3 (from amqp&lt;3.0,&gt;=2.1.4-&gt;kombu&lt;5.0,&gt;=4.2.0-&gt;celery[redis])
+  Downloading https://files.pythonhosted.org/packages/10/50/5b1ebe42843c19f35edb15022ecae339fbec6db5b241a7a13c924dabf2a3/vine-1.1.4-py2.py3-none-any.whl
+Installing collected packages: vine, amqp, kombu, billiard, celery
+  Running setup.py install for billiard ... done
+Successfully installed amqp-2.3.2 billiard-3.5.0.4 celery-4.2.1 kombu-4.2.1 vine-1.1.4
+    100% |████████████████████████████████| 153kB 2.7MB/s 
+Requirement already satisfied: pytz&gt;dev in /usr/lib/python3.6/site-packages (from celery[redis])
+Requirement already satisfied: redis&gt;=2.10.5; extra == "redis" in /home/tester/.local/lib/python3.6/site-packages (from celery[redis])
+Collecting amqp&lt;3.0,&gt;=2.1.4 (from kombu&lt;5.0,&gt;=4.2.0-&gt;celery[redis])
+  Downloading https://files.pythonhosted.org/packages/7f/cf/12d4611fc67babd4ae250c9e8249c5650ae1933395488e9e7e3562b4ff24/amqp-2.3.2-py2.py3-none-any.whl (48kB)
+    100% |████████████████████████████████| 51kB 4.2MB/s 
+Collecting vine&gt;=1.1.3 (from amqp&lt;3.0,&gt;=2.1.4-&gt;kombu&lt;5.0,&gt;=4.2.0-&gt;celery[redis])
+  Downloading https://files.pythonhosted.org/packages/10/50/5b1ebe42843c19f35edb15022ecae339fbec6db5b241a7a13c924dabf2a3/vine-1.1.4-py2.py3-none-any.whl
+Installing collected packages: vine, amqp, kombu, billiard, celery
+  Running setup.py install for billiard ... done
+</pre>
+
+<p>Dále je vhodné pro jistotu zkontrolovat, jestli je dostupný příkaz
+<strong>celery</strong>, který by měl být umístěn na <strong>PATH</strong>
+(typicky v&nbsp;~/.local/bin). V&nbsp;mém případě mám k&nbsp;dispozici dvě
+instalace &ndash; jednu systémovou a jednu nainstalovanou pro lokálního
+uživatele:</p>
+
+<pre>
+$ <strong>whereis -b celery</strong>
+&nbsp;
+celery: /usr/bin/celery /home/tester/.local/bin/celery
+</pre>
+
+<p>Samotný příkaz <strong>celery</strong> má k&nbsp;dispozici poměrně rozsáhlý
+systém nápovědy, která je rozdělena podle jednotlivých podpříkazů
+(<strong>worker</strong>, <strong>events</strong>, <strong>beat</strong>,
+<strong>shell</strong>, <strong>multi</strong> a <strong>amqp</strong>):</p>
+
+<pre>
+$ <strong>celery help</strong>
+&nbsp;
+usage: celery <command> [options] 
+&nbsp;
+Show help screen and exit.
+&nbsp;
+positional arguments:
+  args
+&nbsp;
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+&nbsp;
+Global Options:
+  -A APP, --app APP
+  -b BROKER, --broker BROKER
+  --result-backend RESULT_BACKEND
+  --loader LOADER
+  --config CONFIG
+  --workdir WORKDIR
+  --no-color, -C
+  --quiet, -q
+&nbsp;
+---- -- - - ---- Commands- -------------- --- ------------
+&nbsp;
++ Main: 
+|    celery worker
+|    celery events
+|    celery beat
+|    celery shell
+|    celery multi
+|    celery amqp
+...
+...
+...
+</pre>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Příprava na spuštění nástroje Celery</h2>
+
+<p>Po (doufejme, že úspěšné) instalaci se můžeme pokusit nástroj <i>Celery</i>
+spustit. Vzhledem k&nbsp;tomu, že ve funkci brokera používáme systém Redis,
+budeme muset ve skutečnosti nejdříve inicializovat server Redisu, a to <a
+href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">nám
+již známým způsobem</a> s&nbsp;využitím <a
+href="https://raw.githubusercontent.com/tisnik/presentations/master/redis/redis.conf">tohoto
+konfiguračního souboru připraveného tak, aby byl server viditelný pouze pro
+lokální nástroje</a>:</p>
+
+<pre>
+$ <strong>cd ~/redis</strong>
+$ <strong>redis-server redis.conf</strong>
+</pre>
+
+<p>Dále musíme v&nbsp;pracovním adresáři vytvořit první implementaci workera,
+tj.&nbsp;programového kódu, který bude provádět jednotlivé úlohy (<i>task</i>,
+<i>job</i>). Prozatím bez dalšího podrobnějšího popisu uvedu zdrojový kód
+workera, ovšem v&nbsp;navazujících kapitolách si samozřejmě konfiguraci workerů
+popíšeme podrobněji:</p>
+
+<pre>
+from celery import Celery
+&nbsp;
+app = Celery('tasks', broker='redis://localhost:6379/0')
+&nbsp;
+@app.task
+def add(x, y):
+    return x + y
+</pre>
+
+<p>Konstruktoru <strong>Celery</strong> se předává minimálně jméno hlavního
+modulu, které později použijeme při spuštění nástroje <strong>celery</strong>
+z&nbsp;příkazového řádku. Toto jméno je použito mj.&nbsp;i pro vytvoření
+prefixu všech úloh vkládaných do fronty. Dále konstruktoru předáme takzvaný
+<i>connection string</i> brokera, kterého budeme využívat. Povšimněte si, že se
+budeme připojovat k&nbsp;lokálně běžícímu Redisu, jehož API je dostupné na
+portu 6379 (což je výchozí port pro tento nástroj):</p>
+
+<pre>
+app = Celery('tasks', broker='redis://localhost:6379/0')
+</pre>
+
+<p>Dále si povšimněte tohoto řádku:</p>
+
+<pre>
+@app.task
+</pre>
+
+<p>Jedná se o <a
+href="https://wiki.python.org/moin/PythonDecorators">dekorátor</a>, který
+jednoduchou funkci implementující vlastní práci workera promění ve skutečnou
+úlohu. V&nbsp;praxi je totiž nutné workera volat nepřímo, což je logické,
+protože se do fronty pouze ukládá žádost o spuštění úlohy (+ parametry úlohy),
+ovšem samotné volání bude provedeno nástrojem <i>Celery</i> asynchronně.
+Dekorátor tedy funkci workera obalí potřebným kódem, což je ovšem pro běžné
+uživatele zcela transparentní (pokud nedojde k&nbsp;nějaké závažnější
+chybě).</p>
+
+<p>Zdrojový kód workera by měl být uložen v&nbsp;souboru nazvaném
+<strong>tasks.py</strong> a naleznete ho na adrese <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/tasks.py</a>.</p>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Vlastní spuštění nástroje Celery</h2>
+
+<p>Zbývá nám vlastně již jen vlastní spuštění nástroje <i>Celery</i>.
+K&nbsp;tomu použijeme příkaz <strong>celery</strong>, kterému přes přepínač
+<strong>-A</strong> předáme jméno aplikace s&nbsp;implementací workerů (viz
+název souboru <strong>tasks.sy</strong> a taktéž první parametr konstruktoru
+<strong>Celery</strong>), parametrem <strong>worker</strong> specifikujeme, že
+se má spustit instance workera a konečně parametrem <strong>--loglevel</strong>
+nastavíme úroveň podrobností logovacích informací (bude nás zajímat vše):</p>
+
+<pre>
+$ <strong>celery -A tasks worker --loglevel=info</strong>
+&nbsp; 
+ -------------- celery@localhost.localdomain v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc27.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-11-30 15:53:44
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7f939094cc88
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     disabled://
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; celery           exchange=celery(direct) key=celery
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si zejména řádků obsahujících
+řetězce &bdquo;transport:&ldquo; a &bdquo;results:&ldquo;. První z&nbsp;těchto
+řádků zobrazuje aktuálně používaného brokera, druhý pak backend. Ten jsme
+prozatím nenakonfigurovali, což znamená, že výsledky workerů budou zahozeny
+(což někdy nemusí vadit, pokud nám postačuje pouze spouštět workery
+s&nbsp;vedlejším efektem).</div></p>
+
+<p>Ihned po inicializaci systému se automaticky přidají úlohy, provede se
+připojení k&nbsp;brokeru a následně se zpřístupní API dalším utilitám:</p>
+
+<pre>
+[tasks]
+  . tasks.add
+&nbsp;
+[2018-11-30 15:53:44,436: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-11-30 15:53:44,443: INFO/MainProcess] mingle: searching for neighbors
+[2018-11-30 15:53:45,461: INFO/MainProcess] mingle: all alone
+[2018-11-30 15:53:45,472: INFO/MainProcess] celery@localhost.localdomain ready.
+</pre>
+
+<p>Nyní by měl být Celery připraven přijímat úlohy a distribuovat je mezi
+workery.</p>
+
+<p><div class="rs-tip-major">Poznámka: v&nbsp;případě potřeby si můžete nechat
+vypsat všechny parametry příkazu <strong>celery worker</strong>,
+tj.&nbsp;příkazu, který spouští instanci workera:</div></p>
+
+<pre>
+$ <strong>celery worker --help</strong>
+&nbsp;
+usage: celery worker [options] 
+&nbsp;
+Start worker instance.
+&nbsp;
+Examples:
+&nbsp;
+        $ celery worker --app=proj -l info
+        $ celery worker -A proj -l info -Q hipri,lopri
+&nbsp;
+        $ celery worker -A proj --concurrency=4
+        $ celery worker -A proj --concurrency=1000 -P eventlet
+        $ celery worker --autoscale=10,0
+        ...
+        ...
+        ...
+</pre>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Nastavení počtu paralelně spuštěných workerů</h2>
+
+<p>Počet spuštěných workerů je odvozen od počtu jader, resp.&nbsp;přesněji
+řečeno počtu jader rozeznaných jádrem operačního systému. V&nbsp;mém případě
+jsem nástroj Celery testoval na stroji s&nbsp;osmi jádry (přesněji se jednalo o
+čtyři fyzická s&nbsp;hyper-threadingem: vendor_id: GenuineIntel, bugs:
+cpu_insecure :-), takže se nejdříve podívejme, jak takový mikroprocesor vlastně
+vidí operační systém:</p>
+
+<pre>
+$ <strong>nproc</strong>
+8
+</pre>
+
+<p>Dále spustíme Celery na pozadí a získáme ID hlavního procesu:</p>
+
+<pre>
+$ <strong>celery -A tasks worker &amp;</strong>
+[1] 12477
+</pre>
+
+<p>Nakonec zjistíme, kolik podprocesů bylo vytvořeno:</p>
+
+<pre>
+$ <strong>pstree -a $!</strong>
+celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  ├─celery /usr/bin/celery -A tasks worker
+  └─celery /usr/bin/celery -A tasks worker
+</pre>
+
+<p>Nikoli náhodou bylo vytvořeno (klasicky: forkem) přesně tolik podprocesů
+s&nbsp;workery, aby se při paralelním spuštění všech workerů vytížila všechna
+jádra (předpokládá se, že samotný worker běží v&nbsp;jednom vláknu, což je
+v&nbsp;klasickém CPythonu s&nbsp;GILem ostatně nejjednodušší řešení).</p>
+
+<p>Ovšem počet podprocesů s&nbsp;workery je možné velmi snadno ovlivnit, a to
+konkrétně parametrem <strong>--concurrency</strong>. Zkusme si spuštění dvaceti
+podprocesů s&nbsp;workery:</p>
+
+<pre>
+$ <strong>celery -A tasks worker --loglevel=info --concurrency=20 &amp;</strong>
+[2] 12658
+</pre>
+
+<p>Zjištění, jak nyní vypadá struktura spuštěného procesu a jeho
+podprocesů:</p>
+
+<pre>
+$ <strong>pstree -a $!</strong>
+celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  ├─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+  └─celery /usr/bin/celery -A tasks worker --loglevel=info--concurrency=2
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: <strong>$!</strong> se bude expandovat
+na číslo posledního procesu, který byl spuštěn na pozadí.</div></p>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. Vložení úlohy do fronty a vykonání úlohy</h2>
+
+<p>Ve chvíli, kdy je systém Celery připravený na akceptaci úloh, si můžeme
+vytvořit jednoduchý skript, kterým úlohu přidáme do fronty. Podobně, jako tomu
+bylo v&nbsp;Redis Queue, i v&nbsp;případě Celery je tento skript psaný přímo
+v&nbsp;Pythonu a musí importovat modul s&nbsp;workerem (přesněji řečeno modul,
+v&nbsp;němž je implementována funkce s&nbsp;dekorátorem
+<strong>@app.task</strong>). Díky tomuto přístupu je do jisté míry zaručeno, že
+worker i skript pro vytváření úloh budou mít odpovídající verze, i když je
+nutné říci, že díky dynamičnosti Pythonu jsou snahy o přísnější kontrolu těžko
+implementovatelné.</p>
+
+<p>Podívejme se, jak může vypadat ta nejjednodušší forma skriptu, který do
+fronty přidá novou úlohu. Zdrojový kód naleznete na adrese <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/enqueue_work.py</a>
+a vypadá následovně:</p>
+
+<pre>
+from tasks import add
+&nbsp;
+result = <strong>add.delay(1, 2)</strong>
+print(result)
+print(result.backend)
+</pre>
+
+<p>Za povšimnutí stojí především zvýrazněný příkaz, kterým se přidává nová
+úloha do fronty. Tento příkaz se <i>podobá</i> přímému volání funkce
+<strong>add</strong> (odpovídají parametry atd. atd.), ovšem namísto přímého
+volání se použije nepřímé zavolání <strong>add.delay()</strong>, protože
+dekorátor z&nbsp;naší prosté funkce dynamicky vytvořil objekt.</p>
+
+<p>Po spuštění tohoto skriptu se vytvoří úloha, vloží se do fronty a následně
+se vypíše informace o objektu, který <strong>add.delay</strong> vrací. Proměnná
+s&nbsp;tímto objektem je sice pojmenována <strong>result</strong>, ale
+samozřejmě se nejedná o výsledek práce workera, neboť ten je spuštěn
+asynchronně:</p>
+
+<pre>
+$ <strong>python3 enqueue_work.py </strong>
+23cca8ee-49d8-487f-b1d9-26789bf52e5b
+&lt;celery.backends.base.DisabledBackend object at 0x7f38b2d7f5c0&gt;
+</pre>
+
+<p>Současně by se na terminálu se spuštěným procesem <strong>celery</strong>
+měly objevit informace o tom, že úloha byla přijata a posléze i informace o
+jejím dokončení:</p>
+
+<pre>
+[2018-11-30 15:55:47,253: INFO/MainProcess] Received task: tasks.add[ec190c42-1568-4be2-8db2-01cce0036543]  
+[2018-11-30 15:55:47,255: INFO/ForkPoolWorker-7] Task tasks.add[ec190c42-1568-4be2-8db2-01cce0036543] succeeded in 0.0002822577953338623s: 3
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: logovací zprávy o akceptaci úlohy a o
+jejím dokončení se vypisují s&nbsp;úrovní INFO, takže skutečně musíte Celery
+spouštět s&nbsp;přepínačem <strong> --loglevel=info</strong>. Při produkčním
+nasazení se stovkami či tisíci zpráv za sekundu se toto logování většinou
+vypíná.</div></p>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. Uložení výsledků úloh do Redisu</h2>
+
+<p>Worker, který byl ukázán v&nbsp;předchozích kapitolách, sice počítal
+výsledek (zde konkrétně součet hodnot), ale tento výsledek byl po dokončení
+práce zahozen, protože jsme nenakonfigurovali žádný <i>backend</i> pro
+(dočasné) uložení výsledků. To lze snadno napravit; samozřejmě za předpokladu,
+že je důležité výsledky workerů přímo využívat. Backend se nakonfiguruje přímo
+v&nbsp;souboru <strong>tasks.py</strong>, v&nbsp;němž je implementován vlastní
+kód workera:</p>
+
+<pre>
+from celery import Celery
+&nbsp;
+app = Celery('tasks',
+             broker='redis://localhost:6379/0',
+             backend='redis://localhost:6379/0')
+&nbsp;
+&nbsp;
+@app.task
+def add(x, y):
+    return x + y
+</pre>
+
+<p>Pokud se nyní proces s&nbsp;<strong>celery</strong> restartuje, měla by se
+objevit i informace o nastaveném backendu &ndash; viz zvýrazněná část:</p>
+
+<pre>
+$ <strong>celery -A tasks worker --loglevel=info </strong>
+&nbsp; 
+ -------------- celery@localhost.localdomain v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-05 13:40:10
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7fe0848c8cc0
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     <strong>redis://localhost:6379/0</strong>
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; celery           exchange=celery(direct) key=celery
+</pre>
+
+<p>Možnost ukládání výsledků workerů využijeme v&nbsp;dalších příkladech.</p>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Objekt <strong>AsyncResult</strong> vrácený po zavolání <strong>xxx.delay()</strong></h2>
+
+<p>Výsledkem vložení úlohy do fronty je objekt typu <a
+href="http://docs.celeryproject.org/en/latest/reference/celery.result.html#celery.result.AsyncResult">AsyncResult</a>.
+Tento objekt má několik užitečných atributů a metod. Mezi atributy patří
+například:</p>
+
+<table>
+<tr><th>Atribut</th><th>Význam</th></tr>
+<tr><td>id</td><td>jednoznačné ID úlohy</td></tr>
+<tr><td>backend</td><td>backend použitý pro uložení výsledků</td></tr>
+<tr><td>result</td><td>výsledek, pokud byla úloha dokončena</td></tr>
+<tr><td>state</td><td>aktuální stav úlohy (PENDING, STARTED, RETRY, FAILURE nebo SUCCESS)</td></tr>
+</table>
+
+<p>Dále tento objekt nabízí metody, které je možné použít pro získání dalších
+informací o úloze:</p>
+
+<table>
+<tr><th>Metoda</th><th>Význam</th></tr>
+<tr><td>ready()</td><td>dotaz na stav úlohy (vrací pravdivostní hodnotu)</td></tr>
+<tr><td>failed()</td><td>dotaz na stav úlohy (vrací pravdivostní hodnotu)</td></tr>
+<tr><td>forget()</td><td>odstranění výsledků úlohy z&nbsp;backendu</td></tr>
+<tr><td>get()</td><td>získání výsledků popř.&nbsp;čekání na dokončení</td></tr>
+</table>
+
+<p>Důležité jsou především metody <strong>get()</strong> pro přečtení výsledků
+a <strong>forget()</strong> pro jejich odstranění z&nbsp;backendu (ovšem nic
+nám nebrání výsledky na backendu ponechat a zpracovat je někdy
+v&nbsp;budoucnosti).</p>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Naplánování úlohy a přečtení výsledků</h2>
+
+<p>Další varianta skriptu pro naplánování úlohy je nepatrně složitější, než
+varianta první. Je tomu tak z&nbsp;toho důvodu, že úlohu nejenom naplánujeme,
+ale počkáme si na její dokončení. K&nbsp;tomuto účelu je zavolána metoda
+<strong>AsyncResult.get()</strong> s&nbsp;parametrem
+<strong>timeout=5</strong>, kterým omezujeme čas čekání na maximálně pět
+sekund. Dále by bylo možné specifikovat i parametr <strong>interval</strong>
+pro nastavení intervalu mezi testy, zda je úloha dokončena. Pro déletrvající
+úlohy tak můžeme nastavit čas čekání klidně na jednu hodinu (3600) a interval
+na jednu minutu (60):</p>
+
+<pre>
+from tasks import add
+&nbsp;
+result = add.delay(1, 2)
+print(result)
+print(result.backend)
+print(result.ready())
+print(result.get())
+print(result.ready())
+&nbsp;
+print(result.get(timeout=5))
+&nbsp;
+result.forget()
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: vyzkoušejte si i zakomentování řádku
+s&nbsp;<strong>result.get()</strong></div></p>
+
+<p>Po spuštění tohoto skriptu se vypíšou přibližně tyto zprávy:</p>
+
+<pre>
+$ <strong>python3 enqueue_work.py </strong>
+f6c9e2a9-7e7a-4b94-9343-726bbd4f3161
+&lt;celery.backends.redis.RedisBackend object at 0x7f901a45e6a0&gt;
+False
+3
+True
+3
+</pre>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Konfigurace workerů</h2>
+
+<p>Konfigurace brokeru a backendu stylem, který jsme si ukázali
+v&nbsp;předchozích kapitolách, je vhodná pouze pro malé aplikace
+(resp.&nbsp;pro malé workery). V&nbsp;praxi se však používá poněkud odlišný
+přístup: veškerá konfigurace, která souvisí s&nbsp;workerem, se uloží do
+souboru nazvaného <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/celeryconfig.py">celeryconfig.py</a>
+(jméno sice nemusí být dodrženo, ale je dobré být konzistentní se zbytkem
+světa). Jedná se o běžný Pythonovský soubor, který ovšem typicky obsahuje pouze
+nastavení parametrů workeru a žádný jiný kód. Takový soubor může vypadat
+následovně:</p>
+
+<pre>
+broker_url = 'redis://localhost:6379/0'
+result_backend = 'redis://localhost:6379/0'
+&nbsp;
+task_serializer = 'json'
+result_serializer = 'json'
+accept_content = ['json']
+timezone = 'Europe/Prague'
+enable_utc = True
+&nbsp;
+task_default_queue = 'celery'
+&nbsp;
+worker_log_color = True
+</pre>
+
+<p>Načtení konfigurace ve workerovi zařídí řádek:</p>
+
+<pre>
+app.config_from_object('celeryconfig')
+</pre>
+
+<p>Celý kód workera (soubor <strong>tasks.py</strong>) se tedy změní
+následujícím způsobem:</p>
+
+<pre>
+from celery import Celery
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+@app.task
+def add(x, y):
+    return x + y
+</pre>
+
+<p>Zatímco skript pro naplánování úlohy zůstává naprosto stejný:</p>
+
+<pre>
+from tasks import add
+&nbsp;
+result = add.delay(1, 2)
+print(result)
+print(result.backend)
+print(result.ready())
+print(result.get())
+print(result.ready())
+&nbsp;
+print(result.get(timeout=5))
+&nbsp;
+result.forget()
+</pre>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Chování systému při spuštění většího množství úloh</h2>
+
+<p>Pro zajímavost si ukažme, jak se změní chování Celery ve chvíli, kdy zadáme
+větší množství úloh. Připomínám, že test bude proveden na stroji s&nbsp;osmi
+jádry, tudíž bylo spuštěno osm procesů s&nbsp;workery.</p>
+
+<p>Implementace workera se změní jen nepatrně &ndash; přidáme pouze tisk
+informací na standardní výstup a dvousekundové zpoždění, které simuluje těžkou
+a déletrvající práci:</p>
+
+<pre>
+from time import sleep
+from celery import Celery
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+@app.task
+def add(x, y):
+    print("Working, received parameters {} and {}".format(x, y))
+    sleep(2)
+    print("Done")
+    return x + y
+</pre>
+
+<p>Odlišná ovšem bude implementace skriptu pro naplánování úloh. Nejdříve
+v&nbsp;první programové smyčce co nejrychleji naplánujeme deset úloh a posléze
+se ve druhé smyčce pokusíme o přečtení jejich výsledků a popř.&nbsp;čekání na
+výsledky:</p>
+
+<pre>
+from tasks import add
+&nbsp;
+async_tasks = []
+for i in range(10):
+    async_tasks.append(add.delay(i, i))
+&nbsp;
+for task in async_tasks:
+    print(task)
+    print(task.backend)
+    print(task.ready())
+    print(task.get())
+&nbsp;
+    print(task.get(timeout=5))
+&nbsp;
+    task.forget()
+</pre>
+
+<p>Podívejme se, jaké informace se vypíšou na terminálu s&nbsp;běžícím systémem
+Celery. Vidíme, že <strong>print()</strong> ve workerech je zobrazen
+v&nbsp;logu jako varování, ovšem zajímavější je proložení informací o první
+části úlohy (před <strong>sleep</strong>) s&nbsp;informací o jejím dokončení.
+Navíc si povšimněte řetězců <strong>ForkPoolWorker-X</strong>. Tyto řetězce
+explicitně označují jeden z&nbsp;osmi procesů. Je vidět, že se workeři skutečně
+o práci dělí:</p>
+
+<pre>
+[2018-12-04 16:08:16,142: INFO/MainProcess] Received task: tasks.add[abfc4c46-1fbd-4041-bbea-7ac53a66249a]  
+[2018-12-04 16:08:16,144: INFO/MainProcess] Received task: tasks.add[8059b2bc-2f05-43f9-ae99-a8973d21e387]  
+[2018-12-04 16:08:16,144: WARNING/ForkPoolWorker-3] Working, received parameters 1 and 1
+[2018-12-04 16:08:16,144: WARNING/ForkPoolWorker-2] Working, received parameters 0 and 0
+[2018-12-04 16:08:16,145: INFO/MainProcess] Received task: tasks.add[2d7694fb-27b3-4cff-a005-b4702dd0445b]  
+[2018-12-04 16:08:16,147: INFO/MainProcess] Received task: tasks.add[a8cac06e-1a27-4d18-9132-69d62e7d31d1]  
+[2018-12-04 16:08:16,148: WARNING/ForkPoolWorker-5] Working, received parameters 2 and 2
+[2018-12-04 16:08:16,148: WARNING/ForkPoolWorker-6] Working, received parameters 3 and 3
+[2018-12-04 16:08:16,149: INFO/MainProcess] Received task: tasks.add[f017b5d9-9e1c-4515-81d3-36f30b28cd84]  
+[2018-12-04 16:08:16,154: INFO/MainProcess] Received task: tasks.add[afdbdb0c-e5b8-4dbd-9978-1b430d736854]  
+[2018-12-04 16:08:16,156: WARNING/ForkPoolWorker-8] Working, received parameters 4 and 4
+[2018-12-04 16:08:16,156: WARNING/ForkPoolWorker-1] Working, received parameters 5 and 5
+[2018-12-04 16:08:16,158: INFO/MainProcess] Received task: tasks.add[d65daef0-9c96-4766-a9af-8309b763af65]  
+[2018-12-04 16:08:16,162: INFO/MainProcess] Received task: tasks.add[2f37a8fb-5529-4e89-a1a0-3af736d276aa]  
+[2018-12-04 16:08:16,163: WARNING/ForkPoolWorker-7] Working, received parameters 6 and 6
+[2018-12-04 16:08:16,163: WARNING/ForkPoolWorker-4] Working, received parameters 7 and 7
+[2018-12-04 16:08:16,165: INFO/MainProcess] Received task: tasks.add[0ee1a155-9f9b-40ae-8e24-c84088ff741b]  
+[2018-12-04 16:08:16,169: INFO/MainProcess] Received task: tasks.add[fb639532-cdba-4d8e-b0f2-9485b76a24d6]  
+[2018-12-04 16:08:18,147: WARNING/ForkPoolWorker-3] Done
+[2018-12-04 16:08:18,147: WARNING/ForkPoolWorker-2] Done
+[2018-12-04 16:08:18,149: INFO/ForkPoolWorker-2] Task tasks.add[abfc4c46-1fbd-4041-bbea-7ac53a66249a] succeeded in 2.0046470165252686s: 0
+[2018-12-04 16:08:18,149: INFO/ForkPoolWorker-3] Task tasks.add[8059b2bc-2f05-43f9-ae99-a8973d21e387] succeeded in 2.0048255398869514s: 2
+[2018-12-04 16:08:18,150: WARNING/ForkPoolWorker-6] Done
+[2018-12-04 16:08:18,151: WARNING/ForkPoolWorker-5] Done
+[2018-12-04 16:08:18,152: INFO/ForkPoolWorker-6] Task tasks.add[a8cac06e-1a27-4d18-9132-69d62e7d31d1] succeeded in 2.0038469433784485s: 6
+[2018-12-04 16:08:18,153: WARNING/ForkPoolWorker-3] Working, received parameters 9 and 9
+[2018-12-04 16:08:18,153: INFO/ForkPoolWorker-5] Task tasks.add[2d7694fb-27b3-4cff-a005-b4702dd0445b] succeeded in 2.0052460320293903s: 4
+[2018-12-04 16:08:18,153: WARNING/ForkPoolWorker-2] Working, received parameters 8 and 8
+[2018-12-04 16:08:18,157: WARNING/ForkPoolWorker-8] Done
+[2018-12-04 16:08:18,158: WARNING/ForkPoolWorker-1] Done
+[2018-12-04 16:08:18,158: INFO/ForkPoolWorker-8] Task tasks.add[f017b5d9-9e1c-4515-81d3-36f30b28cd84] succeeded in 2.0022214762866497s: 8
+[2018-12-04 16:08:18,158: INFO/ForkPoolWorker-1] Task tasks.add[afdbdb0c-e5b8-4dbd-9978-1b430d736854] succeeded in 2.002465270459652s: 10
+[2018-12-04 16:08:18,166: WARNING/ForkPoolWorker-7] Done
+[2018-12-04 16:08:18,166: WARNING/ForkPoolWorker-4] Done
+[2018-12-04 16:08:18,167: INFO/ForkPoolWorker-4] Task tasks.add[2f37a8fb-5529-4e89-a1a0-3af736d276aa] succeeded in 2.004064477980137s: 14
+[2018-12-04 16:08:18,167: INFO/ForkPoolWorker-7] Task tasks.add[d65daef0-9c96-4766-a9af-8309b763af65] succeeded in 2.0041318498551846s: 12
+[2018-12-04 16:08:20,156: WARNING/ForkPoolWorker-3] Done
+[2018-12-04 16:08:20,156: WARNING/ForkPoolWorker-2] Done
+[2018-12-04 16:08:20,157: INFO/ForkPoolWorker-3] Task tasks.add[fb639532-cdba-4d8e-b0f2-9485b76a24d6] succeeded in 2.0045981109142303s: 18
+[2018-12-04 16:08:20,157: INFO/ForkPoolWorker-2] Task tasks.add[0ee1a155-9f9b-40ae-8e24-c84088ff741b] succeeded in 2.0046060904860497s: 16
+</pre>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Řetězec několika úloh, které na sobě závisí</h2>
+
+<p>Poměrně často se můžeme setkat s&nbsp;požadavkem, aby se po zpracování jedné
+úlohy spustila úloha další, přičemž tato další úloha přebere již vypočtené
+mezivýsledky. Systém Celery sice není pro tyto účely zcela nejvhodnějším
+nástrojem, ovšem v&nbsp;případě, že graf závislostí úloh není příliš rozsáhlý,
+ho můžeme využít i v&nbsp;této oblasti. Nejprve upravíme workera takovým
+způsobem, aby obsahoval dvě funkce implementující dvě různé úlohy. Pro
+jednoduchost se bude jednat o úlohy součtu a součinu. Obě funkce musí používat
+dekorátor <strong>@app.task</strong>:</p>
+
+<pre>
+from time import sleep
+from celery import Celery
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+<strong>@app.task</strong>
+def add(x, y):
+    print("Working, received parameters {} and {} to add".format(x, y))
+    sleep(2)
+    result = x + y
+    print("Done with result {}".format(result))
+    return result
+
+&nbsp;
+<strong>@app.task</strong>
+def multiply(x, y):
+    print("Working, received parameters {} and {} to multiply".format(x, y))
+    sleep(2)
+    result = x * y
+    print("Done with result {}".format(result))
+    return result
+</pre>
+
+<p>Lišit se ovšem bude spuštění úloh. Budeme chtít, aby se výsledek součtu
+(první úloha) předal do úlohy druhé, v&nbsp;níž se výsledek vynásobí třemi.
+V&nbsp;Celery se takovéto zřetězení zapíše nepovinným parametrem
+<strong>link</strong>. Navíc namísto volání <strong>app.delay</strong>
+použijeme volání <strong>app.apply_async</strong>, které provádí stejnou
+činnost (naplánování úlohy), ovšem je zde možné rozlišit parametry úlohy od
+parametrů samotné funkce <strong>app.apply_async</strong>. Parametry úlohy se
+nyní předávají v&nbsp;n-tici:</p>
+
+<pre>
+from tasks import add, multiply
+&nbsp;
+add.apply_async((1, 2), link=multiply.s(3))
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: ve skutečnosti je volání
+<strong>delay(*args, *kwargs)</strong> zkráceným zápisem
+<strong>apply_async(args, kwargs)</strong>.</div></p>
+
+<p>Samozřejmě můžeme naprosto stejným způsobem spustit větší množství úloh:</p>
+
+<pre>
+from tasks import add, multiply
+
+for i in range(10):
+    add.apply_async((i, i + 1), link=multiply.s(i))
+</pre>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Výsledky zřetězeného spouštění úloh</h2>
+
+<p>Pokud spustíme pouze první skript s&nbsp;dvěma zřetězenými úlohami, můžeme
+v&nbsp;terminálu se spuštěným <strong>celery</strong> sledovat, jak se nejprve
+zavolá <strong>add</strong> a posléze <strong>multiply</strong> (zvýrazněný
+text):</p>
+
+<pre>
+[2018-12-04 20:53:48,759: INFO/MainProcess] Received task: tasks.add[19aa842f-a5a9-41ad-ac6d-0bd72b7ee6f5]  
+[2018-12-04 20:53:48,760: WARNING/ForkPoolWorker-2] Working, received parameters 1 and 2 to <strong>add</strong>
+[2018-12-04 20:53:50,762: WARNING/ForkPoolWorker-2] Done with result 3
+[2018-12-04 20:53:50,767: INFO/ForkPoolWorker-2] Task tasks.add[19aa842f-a5a9-41ad-ac6d-0bd72b7ee6f5] succeeded in 2.0068626664578915s: 3
+[2018-12-04 20:53:50,767: INFO/MainProcess] Received task: tasks.multiply[ad5ec5c6-21df-46a6-a69f-0622e41a905b]  
+[2018-12-04 20:53:50,769: WARNING/ForkPoolWorker-2] Working, received parameters 3 and 3 to <strong>multiply</strong>
+[2018-12-04 20:53:52,772: WARNING/ForkPoolWorker-2] Done with result 9
+[2018-12-04 20:53:52,773: INFO/ForkPoolWorker-2] Task tasks.multiply[ad5ec5c6-21df-46a6-a69f-0622e41a905b] succeeded in 2.004228986799717s: 9
+</pre>
+
+<p>Pokud je naplánovaných více úloh pro součet a následné násobení (celkem
+dvacet úloh), budou se o jednotlivé úlohy starat různí workeři:</p>
+
+<pre>
+[2018-12-04 20:55:01,396: INFO/MainProcess] Received task: tasks.add[2a603183-42cf-4526-9d16-c6211d00f758]  
+[2018-12-04 20:55:01,397: INFO/MainProcess] Received task: tasks.add[90332b97-5508-4d1d-9e3c-3e661fa75771]  
+[2018-12-04 20:55:01,397: WARNING/ForkPoolWorker-1] Working, received parameters 1 and 2 to add
+[2018-12-04 20:55:01,397: WARNING/ForkPoolWorker-2] Working, received parameters 0 and 1 to add
+[2018-12-04 20:55:01,397: INFO/MainProcess] Received task: tasks.add[96ff6943-8cbe-4ab2-83d5-aa761aa53259]  
+[2018-12-04 20:55:01,399: INFO/MainProcess] Received task: tasks.add[e0cbbb1f-2ad6-4a76-a0ed-3621b3b40ab9]  
+[2018-12-04 20:55:01,399: INFO/MainProcess] Received task: tasks.add[8eca11fd-6b46-40ff-aa08-2bb0eb77bdec]  
+[2018-12-04 20:55:01,400: INFO/MainProcess] Received task: tasks.add[eabdb75b-6e58-411b-971c-4b2a7293ddc2]  
+[2018-12-04 20:55:01,400: INFO/MainProcess] Received task: tasks.add[31c5bac7-6b23-4d85-aed8-9a006efc4327]  
+[2018-12-04 20:55:01,401: INFO/MainProcess] Received task: tasks.add[f3ec7d5a-49a4-40fc-8b7d-63c5882ceb21]  
+[2018-12-04 20:55:01,401: INFO/MainProcess] Received task: tasks.add[5b3bb032-d6ba-4ac6-8bdd-f05023355c1d]  
+[2018-12-04 20:55:01,402: INFO/MainProcess] Received task: tasks.add[fee99828-f183-4805-a7cb-53950e99c1ba]  
+[2018-12-04 20:55:03,399: WARNING/ForkPoolWorker-2] Done with result 1
+[2018-12-04 20:55:03,399: WARNING/ForkPoolWorker-1] Done with result 3
+[2018-12-04 20:55:03,403: INFO/ForkPoolWorker-2] Task tasks.add[2a603183-42cf-4526-9d16-c6211d00f758] succeeded in 2.0061469674110413s: 1
+[2018-12-04 20:55:03,403: INFO/ForkPoolWorker-1] Task tasks.add[90332b97-5508-4d1d-9e3c-3e661fa75771] succeeded in 2.006296880543232s: 3
+[2018-12-04 20:55:03,406: WARNING/ForkPoolWorker-2] Working, received parameters 2 and 3 to add
+[2018-12-04 20:55:03,406: WARNING/ForkPoolWorker-1] Working, received parameters 3 and 4 to add
+[2018-12-04 20:55:04,332: INFO/MainProcess] Received task: tasks.multiply[1674a9b3-a7f1-4173-9dfd-ea615cb34b70]  
+[2018-12-04 20:55:04,335: INFO/MainProcess] Received task: tasks.multiply[84928082-373d-4b34-bb13-f3b25561b7fa]  
+[2018-12-04 20:55:05,409: WARNING/ForkPoolWorker-1] Done with result 7
+[2018-12-04 20:55:05,409: WARNING/ForkPoolWorker-2] Done with result 5
+...
+...
+...
+[2018-12-04 20:55:19,469: WARNING/ForkPoolWorker-2] Working, received parameters 17 and 8 to multiply
+[2018-12-04 20:55:19,469: WARNING/ForkPoolWorker-1] Working, received parameters 19 and 9 to multiply
+[2018-12-04 20:55:21,472: WARNING/ForkPoolWorker-2] Done with result 136
+[2018-12-04 20:55:21,472: WARNING/ForkPoolWorker-1] Done with result 171
+[2018-12-04 20:55:21,473: INFO/ForkPoolWorker-2] Task tasks.multiply[0f2801bb-4b0c-42e7-86f3-63abf4bce32e] succeeded in 2.0041882805526257s: 136
+[2018-12-04 20:55:21,473: INFO/ForkPoolWorker-1] Task tasks.multiply[041480fa-f0d3-46c8-916a-d42590ec9f0e] succeeded in 2.004200141876936s: 171
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Zjištění aktuálních informací o stavu systému front</h2>
+
+<p>Pro zjištění, zda systém Celery běží a jak je naškálovaný, použijeme tento
+příkaz:</p>
+
+<pre>
+$ <strong>celery -A tasks status</strong>
+&nbsp;
+celery@localhost.localdomain: OK
+&nbsp;
+1 node online.
+</pre>
+
+<p>V&nbsp;případě, že budeme chtít zjistit výsledek nějaké úlohy (který je
+uložen v&nbsp;backendu), použijeme příkaz:</p>
+
+<pre>
+$ <strong>celery -A tasks result -t tasks.multiply 0f2801bb-4b0c-42e7-86f3-63abf4bce32e</strong>
+&nbsp;
+136
+</pre>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Příkaz <strong>celery inspect</strong></h2>
+
+<p>Dále můžeme zjistit, zda a jaké úlohy jsou právě aktivní. Vrátí se tolik
+řádků, kolik běží úloh:</p>
+
+<pre>
+$ <strong>celery -A tasks inspect active</strong>
+&nbsp;
+-&gt; celery@localhost.localdomain: OK
+    * {'id': '44b3813e-08ab-4b6f-9518-9fdeee1af0d1', 'name': 'tasks.add', 'args': '(5, 6)', 'kwargs': '{}', 'type': 'tasks.add', 'hostname': 'celery@localhost.localdomain', 'time_start': 1543953820.9402742, 'acknowledged': True, 'delivery_info': {'exchange': '', 'routing_key': 'celery', 'priority': 0, 'redelivered': None}, 'worker_pid': 15706}
+</pre>
+
+<p>Tento příkaz ovšem může vrátit pouze zprávu &bdquo;empty&ldquo;, pokud žádná
+úloha neběží:</p>
+
+<pre>
+$ <strong>celery -A tasks inspect active</strong>
+-&gt; celery@localhost.localdomain: OK
+    - empty -
+</pre>
+
+<p>Zajímavé je taktéž zjištění statistických informací o běžícím Celery.
+Povšimněte si především nastavení &bdquo;pool&ldquo; se sadou workerů a
+&bdquo;writes&ldquo; s&nbsp;informacemi o zápisu do backendu:</p>
+
+<pre>
+$ celery -A tasks inspect stats
+-&gt; celery@localhost.localdomain: OK
+    {
+        "broker": {
+            "alternates": [],
+            "connect_timeout": 4,
+            "failover_strategy": "round-robin",
+            "heartbeat": 120.0,
+            "hostname": "localhost",
+            "insist": false,
+            "login_method": null,
+            "port": 6379,
+            "ssl": false,
+            "transport": "redis",
+            "transport_options": {},
+            "uri_prefix": null,
+            "userid": null,
+            "virtual_host": "0"
+        },
+        "clock": "4",
+        "pid": 15699,
+        "pool": {
+            "max-concurrency": 8,
+            "max-tasks-per-child": "N/A",
+            "processes": [
+                15703,
+                15704,
+                15705,
+                15706,
+                15707,
+                15708,
+                15709,
+                15710
+            ],
+            "put-guarded-by-semaphore": false,
+            "timeouts": [
+                0,
+                0
+            ],
+            "writes": {
+                "all": "12.50%, 10.00%, 12.50%, 15.00%, 12.50%, 10.00%, 12.50%, 15.00%",
+                "avg": "12.50%",
+                "inqueues": {
+                    "active": 0,
+                    "total": 8
+                },
+                "raw": "5, 4, 5, 6, 5, 4, 5, 6",
+                "strategy": "fair",
+                "total": 40
+            }
+        },
+        ...
+        ...
+e       ...
+</pre>
+
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Obsah další části a poznámka na závěr</h2>
+
+<p>S&nbsp;dalšími možnostmi nástroje Celery se seznámíme ve druhé a současně i
+poslední části tohoto článku. Ukážeme si například práci s&nbsp;takzvaným
+<i>canvasem</i> a taktéž užitečný nástroj <i>Flower</i> pro sledování a
+vizualizaci úloh (flower zde neznamená květ, ale jde o odvozeninu ze slova
+&bdquo;flow&ldquo;).</p>
+
+<a href="https://www.root.cz/obrazek/347907/"><img src="https://i.iinfo.cz/images/353/celery-event-1-prev.png" class="image-347907" alt="&#160;" width="370" height="242" /></a>
+<p><i>Obrázek 1: Pomocný nástroj pro zobrazení událostí a výsledků práce workerů.</i></p>
+
+<p>Na závěr si dovolím krátké odbočení, které ovšem souvisí jak s&nbsp;dnešním
+článkem, tak i s&nbsp;paralelně běžícím <a
+href="https://www.root.cz/serialy/programovaci-jazyk-go/">seriálem o
+programovacím jazyku Go</a>. Již <a
+href="https://www.root.cz/clanky/go-minimalisticky-a-prekvapive-vykonny-programovaci-jazyk/#k01">v&nbsp;úvodním
+článku</a> jsme si řekli, že na Go přechází (většinou) nikoli programátoři
+používající jazyky C nebo C++, ale programátoři, kteří paralelně pracují
+s&nbsp;Pythonem nebo Node.js. Pochopitelně je vhodné, aby oba ekosystémy
+(Go+Python) používaly podobné nástroje a právě z&nbsp;tohoto důvodu vznikl
+zajímavý projekt <a href="https://github.com/gocelery/gocelery/">gocelery</a>,
+s&nbsp;nímž se pravděpodobně seznámíme v&nbsp;samostatném článku (ovšem
+později).</p>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu byly uloženy do Git repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce. Každý příklad se skládá
+minimálně ze dvou skriptů &ndash; implementace workera a skriptu pro uložení
+nové úlohy do fronty:</p>
+
+<table>
+<tr><th>Příklad</th><th>Skript</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>1</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/tasks.py</a></td></tr>
+<tr><td>1</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example01/enqueue_work.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>2</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/tasks.py</a></td></tr>
+<tr><td>2</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/enqueue_work.py</a></td></tr>
+<tr><td>2</td><td>enqueue_work_without_forget.py</td><td>naplánování úlohy bez smazání výsledků</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/enqueue_work_without_forget.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example02/enqueue_work_without_forget.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>3</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/tasks.py</a></td></tr>
+<tr><td>3</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/enqueue_work.py</a></td></tr>
+<tr><td>3</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example03/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>4</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/tasks.py</a></td></tr>
+<tr><td>4</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/enqueue_work.py</a></td></tr>
+<tr><td>4</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example04/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>5</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/tasks.py</a></td></tr>
+<tr><td>5</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/enqueue_work.py</a></td></tr>
+<tr><td>5</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/enqueue_more_work.py</a></td></tr>
+<tr><td>5</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example05/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>6</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/tasks.py</a></td></tr>
+<tr><td>6</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_work.py</a></td></tr>
+<tr><td>6</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_more_work.py</a></td></tr>
+<tr><td>6</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/celeryconfig.py</a></td></tr>
+</table>
+
+<p><div class="rs-tip-major">Poznámka: demonstrační příklady byly odladěny pro Celery verze 4.2.1 a pro Python 3.6.3. Měly by však být funkční i pro všechny ostatní verze Pythonu podporované knihovnou Celery, tj.&nbsp;i Pythonem 2.7 a vyšším.</div></p>
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>celery na PyPi<br />
+<a href="https://pypi.org/project/celery/">https://pypi.org/project/celery/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí<br />
+<a href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Python Celery &amp; RabbitMQ Tutorial<br />
+<a href="https://tests4geeks.com/python-celery-rabbitmq-tutorial/">https://tests4geeks.com/python-celery-rabbitmq-tutorial/</a>
+</li>
+
+<li>Flower: Real-time Celery web-monitor<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor">http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor</a>
+</li>
+
+<li>Asynchronous Tasks With Django and Celery<br />
+<a href="https://realpython.com/asynchronous-tasks-with-django-and-celery/">https://realpython.com/asynchronous-tasks-with-django-and-celery/</a>
+</li>
+
+<li>First Steps with Celery<br />
+<a href="http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html">http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html</a>
+</li>
+
+<li>node-celery<br />
+<a href="https://github.com/mher/node-celery">https://github.com/mher/node-celery</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+<li>Running multiple workers using Celery<br />
+<a href="https://serverfault.com/questions/655387/running-multiple-workers-using-celery">https://serverfault.com/questions/655387/running-multiple-workers-using-celery</a>
+</li>
+
+<li>celery — Distributed processing<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.html">http://docs.celeryproject.org/en/latest/reference/celery.html</a>
+</li>
+
+<li>Chains<br />
+<a href="https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains">https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains</a>
+</li>
+
+<li>Routing<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing">http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing</a>
+</li>
+
+<li>Celery Distributed Task Queue in Go<br />
+<a href="https://github.com/gocelery/gocelery/">https://github.com/gocelery/gocelery/</a>
+</li>
+
+<li>Python Decorators<br />
+<a href="https://wiki.python.org/moin/PythonDecorators">https://wiki.python.org/moin/PythonDecorators</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2018</small></p>
+</body>
+</html>
+
