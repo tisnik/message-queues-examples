@@ -6,6 +6,6 @@ from worker import do_work
 
 q = Queue(connection=Redis())
 
-for i in range(11):
+for i in range(10):
     result = q.enqueue(do_work)
     print(result)

@@ -10,7 +10,7 @@ q_high = Queue("high", connection=Redis())
 
 jobs = []
 
-for i in range(11):
+for i in range(10):
     job = q_low.enqueue(do_work, i)
     jobs.append(job)
     job = q_high.enqueue(do_work, i)
