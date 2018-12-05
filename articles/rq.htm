@@ -1,0 +1,1702 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>Po popisu základních vlastností databáze Redis si ukážeme užitečný nástroj, který je na Redisu postaven. Tento nástroj se jmenuje RQ (Redis Queue) a slouží pro správu úloh, které jsou (většinou paralelně) spouštěny na pozadí, popř. dokonce na jiném počítači.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí</a></p>
+<p><a href="#k02">2. Instalace knihovny RQ a všech přidružených utilit</a></p>
+<p><a href="#k03">3. Přečtení informací o stavu front</a></p>
+<p><a href="#k04">4. Implementace workera, který úlohy zpracuje</a></p>
+<p><a href="#k05">5. Jednoduchý skript pro naplánování úloh</a></p>
+<p><a href="#k06">6. Propojení a spuštění celého systému</a></p>
+<p><a href="#k07">7. Spuštění a využití dvou workerů</a></p>
+<p><a href="#k08">8. Předání parametrů workerům</a></p>
+<p><a href="#k09">9. Zpracování parametrů předaných workerům</a></p>
+<p><a href="#k10">10. Použití většího množství pojmenovaných front</a></p>
+<p><a href="#k11">11. Plánování úloh do vybraných front</a></p>
+<p><a href="#k12">12. Čtení výsledků jednotlivých úloh zpracovaných workery</a></p>
+<p><a href="#k13">13. Výsledky skriptu, který zadá práci workerům a čte jejich výsledky</a></p>
+<p><a href="#k14">14. Zpracování úloh, které zhavarovaly</a></p>
+<p><a href="#k15">15. Opětovné spuštění zhavarovaných úloh</a></p>
+<p><a href="#k16">16. Využití burst režimu workerů</a></p>
+<p><a href="#k17">17. Jednoduchá aplikace (dashboard) pro sledování stavu front i workerů</a></p>
+<p><a href="#k18">18. Základní operace prováděné na dashboardu</a></p>
+<p><a href="#k19">19. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k20">20. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí</h2>
+
+<p>V&nbsp;předchozích dvou článcích [<a
+href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">1</a>]
+[<a
+href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">2</a>]
+jsme se seznámili se základními vlastnosti databáze Redis, a to především
+z&nbsp;pohledu vývojářů používajících programovací jazyk Python a knihovnu <a
+href="https://github.com/andymccurdy/redis-py">https://github.com/andymccurdy/redis-py</a>.
+Dnes si ukážeme jedno z&nbsp;velmi elegantních a nutno říci, že i užitečných
+využití Redisu. Jedná se o projekt nazvaný jednoduše <strong>RQ</strong> neboli
+plným jménem <i>Redis Queue</i>. Nástroj <strong>RQ</strong> umožňuje vytváření
+takzvaných úloh (zde se ovšem používá termín <i>job</i>, nikoli <i>task</i>),
+které jsou ukládány do zvolené fronty. Následně si úlohy z&nbsp;fronty
+vyzvedává takzvaný <i>worker</i>, který zadanou úlohu zpracuje a uloží případný
+výsledek do Redisu, odkud si tento výsledek může kdokoli, kdo zná identifikátor
+úlohy, přečíst. Samotná úloha (<i>job</i>) není nic složitého &ndash; jedná se
+o pouhé určení funkce (a jejích parametrů) implementované v&nbsp;Pythonu a
+přímo volané z&nbsp;workeru.</p>
+
+<a href="https://www.root.cz/obrazek/347323/"><img src="https://i.iinfo.cz/images/368/rq-1.png" class="image-347323" alt="&#160;" width="309" height="135" /></a>
+<p><i>Obrázek 1: Typická konfigurace systému založeného například na zde
+popisovaném nástroji RQ. Zde se konkrétně používá jediná fronta nazvaná
+&bdquo;default&ldquo;, do které se mohou úlohy přidávat několika programy (těch
+může být libovolné množství). Samotné zpracování úloh je reprezentováno ve
+workerech, kterých taktéž může být libovolné množství podle požadavků aplikace,
+dostupných zdrojů atd. atd. Navíc je možné, aby v&nbsp;systému existovalo větší
+množství pojmenovaných front. Fronty je tak možné rozdělit podle priority, typu
+zpracovávaných úloh apod. Existuje dokonce jedna fronta, do níž se ukládají ty
+úlohy, na nichž worker zhavaroval.</i></p>
+
+<p>Elegance a užitečnost celého tohoto systému spočívá v&nbsp;tom, že úlohy je
+možné vytvářet v&nbsp;několika zcela nezávislých procesech (například se může
+jednat o webovou službu, dále o CLI utilitku apod.), samotných workerů může být
+taktéž prakticky libovolné množství (můžeme celý systém škálovat na pozadí) a
+dokonce můžeme použít několik front, přičemž každé frontě je přiděleno
+jednoznačné jméno. Jednotliví workeři se potom připojují ke specifikovaným
+frontám. Konfigurace (nebo chcete-li správa) celého systému založeného na RQ je
+taktéž jednoduchá, protože si vystačíme s&nbsp;běžícím Redisem, utilitkou RQ
+popsanou dále, implementací workera (což může být ve skutečnosti otázka pouhých
+několika řádků v&nbsp;Pythonu) a konečně implementací skriptu či aplikace,
+která bude do fronty přidávat další úlohy (opět se jedná o pouhých několik
+řádků v&nbsp;Pythonu). Vše si samozřejmě ukážeme na několika demonstračních
+příkladech.</p>
+
+<a href="https://www.root.cz/obrazek/347324/"><img src="https://i.iinfo.cz/images/368/rq-2-prev.png" class="image-347324" alt="&#160;" width="370" height="139" /></a>
+<p><i>Obrázek 2: Podobných systémů jako Redis Queue ve skutečnosti existuje
+více. Na tomto obrázku je ukázána architektura nástroje Celery, který je
+složitější, ale současně i mocnější, než RQ.<br />
+Zdroj obrázku: https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</i></p>
+
+<p><div class="rs-tip-major">Poznámka: právě jednoduchost nástroje RQ oproti
+Celery či jiným systémům způsobila poměrně velkou popularitu tohoto řešení. Je
+tomu tak z&nbsp;toho důvodu, že správa úloh a front je pro mnoho vyvíjených
+systémů ústředním a kritickým prvkem, kterému vývojáři potřebují rozumět a
+popř.&nbsp;ho nějakým způsobem modifikovat. Naproti tomu samozřejmě existuje
+mnoho případů, kdy již možnosti RQ nedostačují a je nutné použít již zmíněný
+Celery či podobný nástroj. Může se například jednat o požadavek na použití
+jiného <i>brokera</i>, než je Redis (dnes je mimochodem poměrně populární
+využít například SQS).</div></p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Instalace knihovny Rq a všech přidružených utilit</h2>
+
+<p>Knihovnu <i>RQ</i> si před jejím otestováním samozřejmě nejdříve musíme
+nainstalovat, a to klasicky s&nbsp;využitím dnes již prakticky standardního
+nástroje <strong>pip3</strong> (nebo <strong>pip</strong>), protože tato
+knihovna je <a href="https://pypi.org/project/rq/">samozřejmě registrována</a>
+i na <a href="https://pypi.python.org/pypi">PyPI (Python Package Indexu)</a>.
+Pro jednoduchost provedeme instalaci jen pro právě aktivního uživatele, takže
+použijeme přepínač <strong>--user</strong>:</p>
+
+<pre>
+$ <strong>pip3 install --user rq</strong>
+Collecting rq
+  Downloading https://files.pythonhosted.org/packages/1d/3f/e05539962949aecd83496736f73abd36bd811884a20f68f691b59805125e/rq-0.12.0-py2.py3-none-any.whl (54kB)
+    100% |████████████████████████████████████████████████████████████████████████████████████████████████| 61kB 856kB/s 
+Requirement already satisfied: click&gt;=5.0 in ./.local/lib/python3.6/site-packages (from rq)
+Requirement already satisfied: redis&gt;=2.7.0 in ./.local/lib/python3.6/site-packages (from rq)
+Installing collected packages: rq
+Successfully installed rq-0.12.0
+You are using pip version 9.0.1, however version 18.1 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+</pre>
+
+<p>Po instalaci by měl být na cestě (PATH) dostupný i nástroj nazvaný jednoduše
+<strong>rq</strong>. I tuto skutečnosti si samozřejmě můžeme otestovat:</p>
+
+<pre>
+$ <strong>whereis -b rq</strong>
+&nbsp;
+rq: /home/tester/.local/bin/rq
+</pre>
+
+<p>V&nbsp;případě, že <strong>rq</strong> nebyl nalezen, vypište si pro jistotu
+obsah proměnné prostředí <strong>PATH</strong> a ujistěte se, že obsahuje
+mj.&nbsp;i adresář <strong>~/.local/bin/</strong>. Přidání tohoto adresáře je
+snadné, například můžeme upravit soubor <strong>.bashrc</strong> (pokud
+pochopitelně používáte BASH):</p>
+
+<pre>
+export PATH=$PATH:<strong>~/.local/bin/</strong>
+</pre>
+
+<p>Pokud byl zmíněný příkaz <strong>rq</strong> nalezen, můžeme ho pro
+otestování spustit a zjistit, zda vypisuje svoji nápovědu:</p>
+
+<pre>
+Usage: rq [OPTIONS] COMMAND [ARGS]...
+&nbsp;
+  RQ command line tool.
+&nbsp;
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+&nbsp;
+Commands:
+  empty    Empty given queues.
+  info     RQ command-line monitor.
+  requeue  Requeue failed jobs.
+  resume   Resumes processing of queues, that where...
+  suspend  Suspends all workers, to resume run `rq...
+  worker   Starts an RQ worker.
+</pre>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Přečtení informací o stavu front</h2>
+
+<p>První užitečnou pomůckou, kterou nám (jakožto administrátorům i
+programátorům) nástroj RQ poskytuje, jsou informace o stavu všech front. Tato
+informace se získá příkazem <strong>rq info</strong>. RQ se v&nbsp;tomto
+případě pokusí připojit k&nbsp;běžícímu Redisu a získat z&nbsp;databáze
+potřebné základní informace o všech frontách. V&nbsp;našem případě nám server
+Redisu prozatím neběží, takže by se mělo vypsat následující chybové
+hlášení:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+Error 111 connecting to localhost:6379. Connection refused.
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: ve skutečnosti můžete namísto <strong>rq
+info</strong> použít i jednoslovní příkaz <strong>rqinfo</strong>.</div></p>
+
+<p>Spuštění samotného serveru Redisu je, jak jsme si již řekli
+v&nbsp;předchozích dvou článcích, velmi snadné, takže si jen ve stručnosti
+připomeňme, že budeme používat <a
+href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">konfigurační
+soubor</a> uložený do adresáře <strong>~/redis</strong>. A přímo z&nbsp;tohoto
+adresáře Redis spustíme:</p>
+
+<pre>
+$ <strong>cd ~/redis</strong>
+$ <strong>redis-server redis.conf</strong>
+</pre>
+
+<p><div class="rs-tip-major">Pro jistotu se budu ještě jednou opakovat:
+skutečně prosím použijte zmíněný konfigurační soubor nebo nějakou jeho obdobu.
+Budete tak mít jistotu, že server Redisu bude naslouchat pouze na lokálním
+rozhraní 127.0.0.1 a nebude tak omylem &bdquo;otevřený&ldquo; do celého
+Internetu.</p></div></p>
+
+<p>Ve chvíli, kdy již server Redisu běží (lze ověřit v&nbsp;jeho logu
+<strong>redis.log</strong>), by měl příkaz <strong>rq info</strong> vypsat
+informace o všech frontách. Prozatím jsme ještě vlastně vůbec nespustili ani
+jednoho workera ani jsme nevytvořili jedinou úlohu. Příkaz by tedy měl vypsat
+tuto informaci:</p>
+
+<ol>
+<li>nejsou používány žádné fronty</li>
+<li>nebyly do nich tudíž ani uloženy žádné úlohy</li>
+<li>nepracují žádní workeři</li>
+<li>neexistující workeři pochopitelně nejsou připojeni k&nbsp;frontám</li>
+</ol>
+
+<p>Ověřme si to:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+0 queues, 0 jobs total
+&nbsp;
+0 workers, 0 queues
+&nbsp;
+Updated: 2018-11-26 18:14:33.032764
+</pre>
+
+<p>Pokud se skutečně vypsaly výše uvedené informace, měl by být jak Redis, tak
+i nástroj RQ dobře nakonfigurován a můžeme se začít připravovat na vytvoření
+prvního skutečně fungujícího příkladu.</p>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Implementace workera, který úlohy zpracuje</h2>
+
+<p>Celé nastavení Redisu a nástroje RQ provádíme především z&nbsp;toho důvodu,
+aby bylo možné plánovat a rozdělovat nějakou práci (například zpracování
+transakce, analýzu dat, uložení analyzovaných dat apod.) mezi větší množství
+takzvaných <i>workerů</i>. Dalším důvodem je vzájemné oddělení
+(<i>decoupling</i>) jednotlivých modulů celého systému, což například zlepšuje
+testovatelnost a umožňuje snadnější výměnu jednotlivých částí. Navíc se může
+zvýšit robustnost celého systému, protože i ty úlohy, které z&nbsp;nějakého
+důvodu zhavarovaly, je možné spustit později.</p>
+
+<p>Zcela nejjednodušším typem workera je z&nbsp;pohledu nástroje RQ jediná
+funkce naprogramovaná v&nbsp;Pythonu, která po svém (nepřímém) zavolání vykoná
+nějakou předem naprogramovanou činnost. Této funkci se typicky předávají nějaké
+parametry, funkce může mít (a velmi často i mívá) vedlejší efekty a dokonce
+může vracet zpět nějaký výsledek, který může být na určitou dobu uložen do
+Redisu a posléze je ho možné vyzvednout a dále zpracovat. Ovšem většinou se
+spoléháme spíše na vedlejší efekt workeru, kterým může být například uložení
+hodnot do databáze, poslání e-mailu, naplánování nové úlohy (!) apod.</p>
+
+<p><div class="rs-tip-major">Poznámka: ve chvíli, kdy funkce resp.&nbsp;celý
+skript zhavaruje (typicky pokud vyhodí výjimku), bude úloha přenesena do fronty
+&bdquo;failed&ldquo;, ovšem celý systém RQ s&nbsp;tímto chováním počítá a proto
+bude bez problémů fungovat dál.</div></p>
+
+<p>Podívejme se nyní, jak může vypadat implementace velmi jednoduchého workeru,
+který neočekává žádné parametry a ani nikam neukládá žádné výsledky. Ten po
+svém zavolání pouze vypíše informaci na standardní výstup, počká několik sekund
+(tedy simuluje práci :-), vypíše druhou zprávu o dokončení své důležité práce a
+následně je ukončen:</p>
+
+<pre>
+from time import sleep
+&nbsp;
+&nbsp;
+def do_work():
+    print("Working")
+    sleep(2)
+    print("Done")
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/worker.py">Zdrojový
+kód s&nbsp;workerem</a> může být uložen kdekoli, ovšem musíme mít na paměti, že
+tento zdrojový kód musí být dostupný (viditelný) z&nbsp;nástroje RQ (protože
+právě z&nbsp;RQ bude worker spouštěn). V&nbsp;praxi to může znamenat jednoduše
+to, že příkaz <strong>rq worker</strong> budeme muset startovat ze stejného
+adresáře, v&nbsp;němž se nachází implementace workera (nepatrně složitější bude
+situace ve chvíli, kdy je worker implementován jako celá knihovna nebo
+modul).</p>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si, že se skutečně jedná o
+běžnou funkci naprogramovanou v&nbsp;Pythonu. Nikde není zapotřebí psát
+konfigurační soubory se specifikací fronty, není nutné používat dekorátor (i
+když existuje dekorátor @job) atd.</div></p>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Jednoduchý skript pro naplánování úloh</h2>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_work.py">Druhý
+skript</a> slouží pro vytváření (plánování) nových úloh a pro jejich poslání do
+fronty, odkud si úlohu později převezme nějaký worker. Nejdříve se zajistí
+připojení do Redisu a získání objektu představujícího frontu (zde se konkrétně
+bude jednat o výchozí frontu nazvanou jednoduše &bdquo;default&ldquo;):</p>
+
+<pre>
+q = Queue(connection=Redis())
+</pre>
+
+<p>Následně se do této fronty vloží nová úloha, která bude provedena workerem,
+jenž implementuje funkci &bdquo;do_work&ldquo;. Zde si povšimněte především
+toho, že do metody <strong>Queue.enqueue</strong> předáváme referenci na funkci
+implementovanou workerem. Nejedná se o pouhé jméno, ale o skutečnou referenci,
+takže je nutné importovat modul s&nbsp;workerem:</p>
+
+<pre>
+result = q.enqueue(do_work)
+</pre>
+
+<p>Samotná návratová hodnota metody <strong>Queue.enqueue</strong> ovšem není
+výsledkem práce workera (ten je totiž spuštěn asynchronně v&nbsp;předem
+neznámém čase), ale reference na objekt, který můžeme použít pro čtení výsledků
+z&nbsp;Redisu popř.&nbsp;pro zjištění, zda již výsledky existují.</p>
+
+<p>Úplný skript, po jehož spuštění se do fronty přidá jedna nová úloha, vypadá
+následovně:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q = Queue(connection=Redis())
+&nbsp;
+result = q.enqueue(do_work)
+print(result)
+</pre>
+
+<p>V&nbsp;praxi se samozřejmě může naplánovat větší množství úloh (jinak by
+existence fronty postrádala význam a postačoval by jednodušší <i>mailbox</i>),
+což je odsimulováno <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_more_work.py">dalším
+skriptem</a>, který do fronty postupně vloží zadání deseti úloh:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q = Queue(connection=Redis())
+&nbsp;
+for i in range(10):
+    result = q.enqueue(do_work)
+    print(result)
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: samotný worker prozatím neběží, což ale
+nevadí, protože úlohy se mohou pouze uložit do fronty a čekat tam až na ten
+okamžik, kdy je vhodný worker spuštěn. Právě zde se ukazuje výhoda použití
+Redisu, protože některé jiné systémy pro práci s&nbsp;frontami mají informace
+uloženy pouze v&nbsp;operační paměti a jsou tak více závislé na stabilitě
+celého systému i na vnějších faktorech (dodávky energie, legendární uklízečka a
+její smeták atd.).</div></p>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Propojení a spuštění celého systému</h2>
+
+<p>Nyní tedy máme připraveny čtyři části celého systému:</p>
+
+<ol>
+<li>Databázi Redis, již běžící jako server.</li>
+<li>Systém RQ startující workery, prozatím neběžící.</li>
+<li><a href="#k04">Skript implementující workera</a>.</li>
+<li><a href="#k05">Skript, který workerům nepřímo zadává úlohy</a>.</li>
+</ol>
+
+<p>Nejprve spustíme skript, který workerům přidá úlohy, které budou uloženy do
+fronty nazvané &bdquo;default&ldquo;:</p>
+
+<pre>
+$ <strong>python3 enqueue_work.py</strong>
+&nbsp;
+12:30:12 RQ worker 'rq:worker:localhost.12549' started, version 0.12.0
+12:30:12 *** Listening on default...
+12:30:12 Cleaning registries for queue: default
+...
+...
+...
+</pre>
+
+<p>Po dokončení skriptu znovu spustíme <strong>rq info</strong> a získáme
+aktuální stav front. Výstup by měl vypadat následovně:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |██ 10
+1 queues, 1 jobs total
+&nbsp;
+localhost.28046 busy: default
+0 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:06:24.461996
+</pre>
+
+<p>Ve druhém bloku se zobrazují informace o workerech, kteří mohou být typicky
+ve stavu &bdquo;busy&ldquo; nebo &bdquo;idle&ldquo;.</p>
+
+<p>Můžeme samozřejmě spustit i druhý skript, který do fronty přidá dalších
+deset úloh:</p>
+
+<pre>
+$ <strong>python3 enqueue_more_work.py </strong>
+&nbsp;
+&lt;Job e3e800c4-a8e1-41c8-8f34-ab7a8f3264dd: worker.do_work()&gt;
+&lt;Job 940d4b54-4960-41b3-90b1-3218a01f22f9: worker.do_work()&gt;
+&lt;Job 4129bfce-5982-4ab6-b0ee-8d1cf8f888a8: worker.do_work()&gt;
+&lt;Job ecb5b410-5fe0-4251-b910-827ad5f8e657: worker.do_work()&gt;
+&lt;Job c9ca571a-c5ac-4c76-8c22-d573969a313f: worker.do_work()&gt;
+&lt;Job 186eea65-6b1d-4535-8f50-e9cf0cf55cba: worker.do_work()&gt;
+&lt;Job 76f55862-9cc4-4a47-beb3-eb8078e8f1dd: worker.do_work()&gt;
+&lt;Job bf2a96e0-6de8-4434-9e80-86f96e5a8a23: worker.do_work()&gt;
+&lt;Job 925e0f63-927f-424f-bcde-091dfa0d9940: worker.do_work()&gt;
+&lt;Job 4c2790b1-4992-482f-8576-699e38576992: worker.do_work()&gt;
+</pre>
+
+<p>Opětovným spuštěním příkazu <strong>rq info</strong> se přesvědčíme o tom,
+že se úlohy do fronty &bdquo;default&ldquo; skutečně vložily:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |██████████████████████████████ 11
+1 queues, 11 jobs total
+&nbsp;
+localhost.28046 busy: default
+0 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:06:24.461996
+</pre>
+
+<p>Může ovšem taktéž nastat situace, kdy nastane na straně workera chyba.
+V&nbsp;tomto případě se úloha uloží do fronty nazvané &bdquo;failed&ldquo; a
+situace bude nepatrně odlišná od situace předchozí:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |██████████████████████████████ 10
+failed       |██████ 2
+2 queues, 12 jobs total
+&nbsp;
+localhost.28046 busy: default
+1 workers, 2 queues
+&nbsp;
+Updated: 2018-11-23 18:06:24.461996
+</pre>
+
+<p>V&nbsp;této chvíli již tedy máme úlohy připraveny ve frontě, takže můžeme
+spustit workera (prozatím jediného) a to příkazem:</p>
+
+<pre>
+$ <strong>rq worker</strong>
+&nbsp;
+12:30:12 RQ worker 'rq:worker:localhost.12549' started, version 0.12.0
+12:30:12 *** Listening on default...
+12:30:12 Cleaning registries for queue: default
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: musíte být přitom přepnuti do adresáře
+se zdrojovým kódem workera. V&nbsp;opačném případě nástroj RQ skript nenalezne
+a skončí chybou (teoreticky je možný i jiný postup spočívající v&nbsp;editaci
+proměnné prostředí <strong>PYTHONPATH</strong>, ale tím si můžete zadělat na
+budoucí problémy).</div></p>
+
+<p>Jakmile je worker připojen, měl by začít z&nbsp;fronty odebírat jednotlivé
+úlohy a postupně je zpracovávat:</p>
+
+<pre>
+12:30:12 default: worker.do_work() (df740da4-96f9-4c84-a2c3-b333f2882237)
+Working
+Done
+12:30:35 default: Job OK (fd78d637-0209-4137-b0b7-a156ae6776f3)
+12:30:35 Result is kept for 500 seconds
+...
+...
+...
+12:30:14 default: Job OK (df740da4-96f9-4c84-a2c3-b333f2882237)
+12:30:14 Result is kept for 500 seconds
+12:30:14 default: worker.do_work() (e3e800c4-a8e1-41c8-8f34-ab7a8f3264dd)
+Working
+Done
+...
+...
+...
+12:30:35 default: worker.do_work() (4c2790b1-4992-482f-8576-699e38576992)
+Working
+Done
+12:30:37 default: Job OK (4c2790b1-4992-482f-8576-699e38576992)
+12:30:37 Result is kept for 500 seconds
+</pre>
+
+<p>Pokud v&nbsp;průběhu zpracovávání úloh pustíme na dalším terminálu příkaz
+<strong>rq info</strong>, mělo by být patrné, že worker skutečně pracuje a
+postupně vybírá prvky z&nbsp;fronty &bdquo;default&ldquo;:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |██████ 3
+1 queues, 3 jobs total
+&nbsp;
+localhost.28046 busy: default
+1 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:06:42.148104
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: právě proto, aby bylo možné sledovat
+stav front, je worker naprogramován tak, že jednotlivé úlohy dokončuje se
+zpožděním.</div></p>
+
+<p>Popř.&nbsp;pokud je již vytvořena fronta &bdquo;failed&ldquo;, zůstane její
+obsah nezměněn:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |███ 1
+failed       |██████ 2
+2 queues, 3 jobs total
+&nbsp;
+localhost.28046 busy: default
+1 workers, 2 queues
+&nbsp;
+Updated: 2018-11-23 18:06:42.148104
+</pre>
+
+<p>Takto bude vypadat situace ve chvíli, kdy worker dokončil všechny mu
+přidělené úlohy:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      | 0
+1 queues, 0 jobs total
+&nbsp;
+localhost.28046 idle: default
+1 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:06:50.867752
+</pre>
+
+<p>Alternativní konec práce workera &ndash; standardní úlohy byly dokončeny,
+ovšem zůstává několik úloh ve frontě &bdquo;failed&ldquo;:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+failed       |██████ 2
+default      | 0
+2 queues, 2 jobs total
+&nbsp;
+localhost.28046 idle: default
+1 workers, 2 queues
+&nbsp;
+Updated: 2018-11-23 18:06:50.867752
+</pre>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. Spuštění a využití dvou workerů</h2>
+
+<p>Nic nám samozřejmě nebrání využít flexibility systému RQ a spustit několik
+na sobě nezávislých workerů. To se provádí snadno &ndash; spustíme příkaz
+<strong>rq worker</strong> tolikrát, kolik workerů budeme potřebovat. Pro
+ilustraci nyní pustíme dva workery, každý na jiném terminálu (v&nbsp;praxi
+byste pravděpodobně provedli spuštění na pozadí pomocí nástroje
+<strong>nohup</strong> a <strong>&amp;</strong>, vytvoření klasické služby atd.
+atd.).</p>
+
+<p>První terminál:</p>
+
+<pre>
+$ <strong>rq worker</strong>
+&nbsp;
+12:36:57 RQ worker 'rq:worker:localhost.12619' started, version 0.12.0
+12:36:57 *** Listening on default...
+12:36:57 Cleaning registries for queue: default
+</pre>
+
+<p>Druhý terminál:</p>
+
+<pre>
+$ <strong>rq worker</strong>
+&nbsp;
+12:36:51 RQ worker 'rq:worker:localhost.12614' started, version 0.12.0
+12:36:51 *** Listening on default...
+12:36:51 Cleaning registries for queue: default
+</pre>
+
+<p>Pokud nyní spustíme skript <strong>enqueue_more_work.py</strong> pro
+vytvoření nových úloh, budou se workeři v&nbsp;provádění úloh střídat &ndash;
+podle toho, který worker je v&nbsp;daný okamžik zaneprázdněný a který nikoli.
+Pokud jsou oba workeři připraveni přijímat úlohy, záleží jen na plánovači
+operačního systému, který worker úlohu získá a zpracuje (to je jedna
+z&nbsp;vlastností RQ: nesnaží se reimplementovat ty činnosti, pro které již
+existuje vhodné a ověřené řešení):</p>
+
+<a href="https://www.root.cz/obrazek/347325/"><img src="https://i.iinfo.cz/images/368/rq-3-prev.png" class="image-347325" alt="&#160;" width="338" height="270" /></a>
+<p><i>Obrázek 3: Na dvojici terminálů napravo jsou spuštěny workeři.
+V&nbsp;levém terminálu pak skript, který do fronty &bdquo;default&ldquo;
+přidává nové úlohy. Tyto úlohy jsou automaticky odebírány a zpracovávány
+jednotlivými workery systémem &bdquo;kdo dřív přijde, ten dřív
+mele&ldquo;.</i></p>
+
+<p>Pokud nyní spustíme příkaz <strong>rq info</strong>, zobrazí se informace o
+větším množství workerů:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |███ 4
+1 queues, 4 jobs total
+&nbsp;
+localhost.29010 busy: default
+localhost.28864 busy: default
+2 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:08:11.005553
+</pre>
+
+<p>Alternativní zobrazení ve chvíli, kdy existuje i fronta s&nbsp;úlohami,
+které zhavarovaly:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      |█ 1
+failed       |██ 2
+2 queues, 3 jobs total
+&nbsp;
+localhost.29010 busy: default
+localhost.28864 busy: default
+2 workers, 2 queues
+&nbsp;
+Updated: 2018-11-23 18:08:13.012523
+</pre>
+
+<p>Po dokončení všech úloh se zobrazí:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      | 0
+1 queues, 2 jobs total
+&nbsp;
+localhost.28864 idle: default
+localhost.29010 idle: default
+2 workers, 1 queues
+&nbsp;
+Updated: 2018-11-23 18:08:34.512040
+</pre>
+
+<p>Popř.:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      | 0
+failed       |██ 2
+2 queues, 2 jobs total
+&nbsp;
+localhost.28864 idle: default
+localhost.29010 idle: default
+2 workers, 2 queues
+&nbsp;
+Updated: 2018-11-23 18:08:39.268931
+</pre>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. Předání parametrů workerům</h2>
+
+<p>V&nbsp;úvodních kapitolách jsme si řekli, že workerům je možné předávat
+nějaké parametry o úlohách, které mají zpracovat (což je ostatně logické).
+Provádí se to snadno. Nejprve se podívejme na implementaci samotného workera,
+konkrétně na funkci, kterou jsme pojmenovali <strong>do_work</strong>. Tuto
+funkci můžeme přepsat takovým způsobem, aby akceptovala nějaký parametr. Nová
+podoba funkce může vypadat následovně:</p>
+
+<pre>
+from time import sleep
+&nbsp;
+&nbsp;
+def do_work(<strong>param</strong>):
+    print("Working, received parameter {}".format(<strong>param</strong>))
+    sleep(2)
+    print("Done")
+</pre>
+
+<p>Jak se však parametr dostane do fronty? Tento parametr (nebo více parametrů)
+se předá metodě <strong>Queue.enqueue</strong>. Původně jsme tuto metodu volali
+takto:</p>
+
+<pre>
+result = q.enqueue(<strong>do_work</strong>)
+</pre>
+
+<p>Můžeme však použít i nepovinný parametr (parametry), které se v&nbsp;daném
+pořadí předají workeru:</p>
+
+<pre>
+result = q.enqueue(<strong>do_work, 0</strong>)
+</pre>
+
+<p>Upravený skript pro vytvoření nové úlohy může vypadat následovně:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q = Queue(connection=Redis())
+&nbsp;
+result = q.enqueue(<strong>do_work, 0</strong>)
+print(result)
+</pre>
+
+<p>Samozřejmě můžeme vytvořit více úloh, přičemž každá úloha bude (později)
+spuštěna s&nbsp;jiným parametrem:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q = Queue(connection=Redis())
+&nbsp;
+for i in range(10):
+    result = q.enqueue(<strong>do_work, i</strong>)
+    print(result)
+</pre>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Zpracování parametrů předaných workerům</h2>
+
+<p>Pokud nyní spustíme jednoho workera, můžeme sledovat, že skutečně přijímá
+parametry úlohy a současně, že se úlohy zpracovávají v&nbsp;tom pořadí,
+v&nbsp;jakém byly vloženy do fronty:</p>
+
+<pre>
+$ <strong>rq worker</strong>
+&nbsp;
+11:58:29 default: Job OK (1e26c193-e17e-4a7d-8dbe-75646af3cee3)
+11:58:29 Result is kept for 500 seconds
+11:58:31 default: worker.do_work(0) (5f937d3a-2b52-47a0-b0fd-cb00ed1adbc7)
+<strong>Working, received parameter 0</strong>
+Done
+11:58:33 default: Job OK (5f937d3a-2b52-47a0-b0fd-cb00ed1adbc7)
+11:58:33 Result is kept for 500 seconds
+11:58:33 default: worker.do_work(1) (8c9b59a9-6a75-47fb-92c8-5ddab6f84668)
+<strong>Working, received parameter 1</strong>
+Done
+11:58:35 default: Job OK (8c9b59a9-6a75-47fb-92c8-5ddab6f84668)
+11:58:35 Result is kept for 500 seconds
+11:58:35 default: worker.do_work(2) (deae6704-0b5d-4835-a2fd-edfa807d40f3)
+<strong>Working, received parameter 2</strong>
+Done
+11:58:37 default: Job OK (deae6704-0b5d-4835-a2fd-edfa807d40f3)
+11:58:37 Result is kept for 500 seconds
+11:58:37 default: worker.do_work(3) (e1104446-a1b8-4f18-8dbb-5ed0052aa492)
+<strong>Working, received parameter 3</strong>
+Done
+11:58:39 default: Job OK (e1104446-a1b8-4f18-8dbb-5ed0052aa492)
+11:58:39 Result is kept for 500 seconds
+11:58:39 default: worker.do_work(4) (8d4329c2-b74e-4ac3-a8e5-10956bb65ce6)
+<strong>Working, received parameter 4</strong>
+Done
+11:58:41 default: Job OK (8d4329c2-b74e-4ac3-a8e5-10956bb65ce6)
+11:58:41 Result is kept for 500 seconds
+11:58:41 default: worker.do_work(5) (6edbd9cd-39b9-46e5-a2da-720cabbbf84b)
+<strong>Working, received parameter 5</strong>
+Done
+...
+...
+...
+</pre>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Použití většího množství pojmenovaných front</h2>
+
+<p>V&nbsp;této kapitole si ukážeme, jakým způsobem je možné nakonfigurovat a
+použít větší množství front. Opět začneme implementací workera. Ve skutečnosti
+se v&nbsp;jeho zdrojovém kódu nemusí nic měnit, protože worker je volaný
+z&nbsp;utilitky <strong>rq</strong> a tudíž přímo s&nbsp;frontami nemusí
+komunikovat:</p>
+
+<pre>
+from time import sleep
+&nbsp;
+&nbsp;
+def do_work(param):
+    print("Working, received parameter {}".format(param))
+    sleep(2)
+    print("Done")
+</pre>
+
+<p>Liší se však způsob spuštění workera. Nyní můžeme utilitě
+<strong>rq</strong> předat jak jméno workera (resp.&nbsp;skriptu, kde je
+implementovaný), tak i jméno fronty, přes kterou se workeru mají předávat
+úlohy:</p>
+
+<pre>
+$ <strong>rq worker low</strong>
+&nbsp;
+13:22:53 RQ worker 'rq:worker:localhost.4409' started, version 0.12.0
+13:22:53 *** Listening on low...
+13:22:53 Cleaning registries for queue: low
+13:22:53 low: worker.do_work(0) (84c123db-0584-45e9-8372-ee2136b93e5e)
+Working, received parameter 0
+Done
+13:22:55 low: Job OK (84c123db-0584-45e9-8372-ee2136b93e5e)
+13:22:55 Result is kept for 500 seconds
+13:22:55 low: worker.do_work(1) (f24ad99e-b289-4be0-8769-5957bbdc4dc3)
+Working, received parameter 1
+Done
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: v&nbsp;tomto případě worker bude
+ignorovat výchozí frontu pojmenovanou &bdquo;default&ldquo;!</div></p>
+
+<p>Dokonce můžeme specifikovat i větší množství front, zde konkrétně front se
+jmény &bdquo;low&ldquo; a &bdquo;high&ldquo;:</p>
+
+<pre>
+$ <strong>rq worker low high</strong>
+15:37:37 RQ worker 'rq:worker:localhost.29635' started, version 0.12.0
+15:37:37 *** Listening on low, high...
+15:37:37 Cleaning registries for queue: low
+15:37:37 Cleaning registries for queue: high
+15:37:37 high: worker.do_work(8) (267314d3-4a0f-4fa2-883e-3ce6b8afc711)
+</pre>
+
+<p>Příkaz <strong>rq info</strong> by měl nyní zobrazit informaci o minimálně třech frontách:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+default      | 0
+high         | 0
+low          | 0
+3 queues, 0 jobs total
+&nbsp;
+localhost.29635 idle: low, high
+1 workers, 3 queues
+&nbsp;
+Updated: 2018-11-28 15:38:15.500669
+</pre>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Plánování úloh do vybraných front</h2>
+
+<p>Pokud budeme chtít naplánovat úlohu do jiné fronty, než je výchozí fronta
+pojmenovaná &bdquo;default&ldquo;, je nutné jméno fronty specifikovat již při
+inicializaci objektu <strong>Queue</strong>. Jméno fronty se předává
+v&nbsp;prvním parametru konstruktoru:</p>
+
+<pre>
+q_low = Queue("low", connection=Redis())
+q_high = Queue("high", connection=Redis())
+</pre>
+
+<p>Po spuštění následujícího skriptu se vytvoří dvacet úloh, přičemž deset
+z&nbsp;nich se vloží do fronty nazvané &bdquo;low&ldquo; a zbylých deset do
+fronty pojmenované &bdquo;high&ldquo;:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q_low = <strong>Queue("low", connection=Redis())</strong>
+q_high = <strong>Queue("high", connection=Redis())</strong>
+&nbsp;
+&nbsp;
+for i in range(10):
+    result = q_low.enqueue(do_work, i)
+    result = q_high.enqueue(do_work, i)
+    print(result)
+</pre>
+
+<p>Výchozí stav front před spuštěním předchozího skriptu může být
+následující:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+failed       |██ 2
+default      | 0
+2 queues, 2 jobs total
+&nbsp;
+localhost.4312 idle: default
+1 workers, 2 queues
+&nbsp;
+Updated: 2018-11-26 13:21:08.333807
+</pre>
+
+<p>Ihned po spuštění (pokud neběží workeři) získáme informaci o dvou nových
+frontách, z&nbsp;nichž každá obsahuje deset úloh:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+low          |██████████ 10
+failed       |██ 2
+default      | 0
+high         |██████████ 10
+4 queues, 22 jobs total
+&nbsp;
+localhost.4312 idle: default
+1 workers, 4 queues
+&nbsp;
+Updated: 2018-11-26 13:22:06.236766
+</pre>
+
+<p>Ve chvíli, kdy spustíme jediného workera příkazem <strong>rq worker
+low</strong>, zpracuje worker pouze úlohy z&nbsp;fronty &bdquo;low&ldquo; a
+zbylé fronty bude ignorovat:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+low          | 0
+high         |██████████ 10
+default      | 0
+failed       |██ 2
+4 queues, 12 jobs total
+&nbsp;
+localhost.4430 busy: high
+1 workers, 4 queues
+</pre>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Čtení výsledků jednotlivých úloh zpracovaných workery</h2>
+
+<p>Prozatím jsme si neukázali, jakým způsobem je možné číst výsledky vytvořené
+jednotlivými workery. Výsledkem je myšlena návratová hodnota funkce, kterou je
+worker implementován. Tyto výsledky se ukládají zpět do Redisu, kde jsou ovšem
+(pokud neprovedeme odlišnou konfiguraci) zachovány pouze po určitou dobu
+&ndash; ve výchozím nastavení se jedná o 500 sekund. V&nbsp;případě, že nějaký
+nástroj či aplikace zná ID příslušné úlohy, může si výsledek z&nbsp;Redisu
+přečíst. Ovšem čtení je možné provést i jednodušším způsobem, a to přímo ze
+skriptu, který úlohy vytváří. Návratovou hodnotou metody
+<strong>Queue.enqueue</strong> je totiž objekt představující právě vytvořenou
+úlohu a přes tento objekt se můžeme pokusit přečíst výsledky: jednoduše
+přečteme hodnotu atributu <strong>result</strong>:</p>
+
+<pre>
+q = Queue(connection=Redis())
+&nbsp;
+job = q.enqueue(do_work, 42)
+&nbsp;
+result = job.result
+&nbsp;
+print(result)
+</pre>
+
+<p>Ve skutečnosti ovšem získáme prakticky ve všech případech pouze hodnotu
+<strong>None</strong>, protože se snažíme výsledky přečíst ihned poté, co byla
+úloha vložena do fronty. Hodnota <strong>None</strong> značí, že prozatím žádný
+výsledek není k&nbsp;dispozici. Ukažme si tedy nepatrně složitější příklad,
+v&nbsp;němž vytvoříme několik úloh, počkáme sedm sekund a teprve poté se
+pokusíme přečíst výsledky úloh. Sedm sekund je zvoleno proto, aby se některé
+úlohy stihly dokončit a jiné nikoli:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+from time import sleep
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q_low = Queue("low", connection=Redis())
+q_high = Queue("high", connection=Redis())
+&nbsp;
+jobs = []
+&nbsp;
+for i in range(10):
+    job = q_low.enqueue(do_work, i)
+    jobs.append(job)
+    job = q_high.enqueue(do_work, i)
+    jobs.append(job)
+&nbsp;
+print("Zzz")
+&nbsp;
+<strong>sleep(7)</strong>
+&nbsp;
+print("Reading job results")
+&nbsp;
+for job in jobs:
+    print(job)
+    result = job.result
+    if result is not None:
+        print(result)
+</pre>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Výsledky skriptu, který zadá práci workerům a čte jejich výsledky</h2>
+
+<p>Po spuštění výše popsaného skriptu můžeme získat následující výsledky. Vždy
+je zobrazen řetězec reprezentující každou úlohu a pokud je již známý výsledek,
+je ihned zobrazen na následujícím řádku:</p>
+
+<pre>
+Zzz
+Reading job results
+&lt;Job 31caa957-b8a2-401d-a3fd-2c0c7167c53c: worker.do_work(0)&gt;
+&lt;Job 25ae9c85-532d-4b3c-ba8b-1195b20d3603: worker.do_work(0)&gt;
+1.0
+&lt;Job 30f8572e-297e-499a-91c7-ff0097c82071: worker.do_work(1)&gt;
+&lt;Job d0547019-f429-40d9-8ef4-b7efcae31833: worker.do_work(1)&gt;
+0.5
+&lt;Job 09f7b366-feaa-4a2f-8686-665f23236848: worker.do_work(2)&gt;
+&lt;Job 597cd7ec-25eb-4569-af94-8ee3777369c2: worker.do_work(2)&gt;
+0.3333333333333333
+&lt;Job e733712b-483c-4161-8b3a-2bcc3d1891cc: worker.do_work(3)&gt;
+&lt;Job 23c50496-049b-4b24-a26f-5889af66e97e: worker.do_work(3)&gt;
+&lt;Job fb1dfce7-8c19-4d1f-a8ec-59b01576cd6b: worker.do_work(4)&gt;
+&lt;Job 70f62ea9-e9c8-40b5-a8d4-cd4742fee063: worker.do_work(4)&gt;
+&lt;Job f4b022d1-e5ea-4001-b1c3-de0338c669d6: worker.do_work(5)&gt;
+&lt;Job 345b2470-92a1-4169-af2e-3b8b283aba56: worker.do_work(5)&gt;
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: asi jste si všimli, že ve skutečnosti
+běžel jediný worker, který zpracovával úlohy pouze z&nbsp;jedné
+fronty,</div></p>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Získání informací o úlohách, které zhavarovaly</h2>
+
+<p>Již v&nbsp;předchozích kapitolách jsme se zmínili o tom, že některé úlohy
+mohou zhavarovat, a to z&nbsp;různých důvodů. Nyní si toto chování odsimulujeme
+na nepatrně upraveném workerovi, který zhavaruje (vyhodí výjimku) na řádku
+s&nbsp;příkazem <strong>assert</strong>:</p>
+
+<pre>
+from time import sleep
+&nbsp;
+&nbsp;
+def do_work():
+    print("Working")
+    sleep(2)
+    assert False
+    print("Done")
+</pre>
+
+<p>Workera spustíme:</p>
+
+<pre>
+$ <strong>rq worker</strong>
+16:59:02 RQ worker 'rq:worker:localhost.32100' started, version 0.12.0
+16:59:02 *** Listening on default...
+16:59:02 Cleaning registries for queue: default
+</pre>
+
+<p>Takto upravený worker při pokusu o vykonání úlohy pochopitelně vyhodí
+výjimku, což je systémem RQ správně detekováno:</p>
+
+<pre>
+16:59:03 default: worker.do_work() (c5468250-e2c5-494f-8bd8-f1f51b9a81f2)
+Working
+16:59:05 AssertionError
+Traceback (most recent call last):
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/worker.py", line 793, in perform_job
+    rv = job.perform()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 599, in perform
+    self._result = self._execute()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 605, in _execute
+    return self.func(*self.args, **self.kwargs)
+  File "./worker.py", line 7, in do_work
+    assert False
+AssertionError
+Traceback (most recent call last):
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/worker.py", line 793, in perform_job
+    rv = job.perform()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 599, in perform
+    self._result = self._execute()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 605, in _execute
+    return self.func(*self.args, **self.kwargs)
+  File "./worker.py", line 7, in do_work
+    assert False
+AssertionError
+16:59:05 Moving job to 'failed' queue
+</pre>
+
+<p>Taková úloha se automaticky přesune do fronty nazvané &bdquo;failed&ldquo;,
+takže stav front může vypadat například následovně:</p>
+
+<pre>
+$ <strong>rq info</strong>
+&nbsp;
+low          |███████████ 11
+failed       |███ 3
+default      | 0
+high         |███████████ 11
+4 queues, 25 jobs total
+&nbsp;
+localhost.32100 idle: default
+1 workers, 4 queues
+&nbsp;
+Updated: 2018-11-28 16:59:51.713251
+</pre>
+
+<p>Veškeré informace o úloze jsou tedy uloženy zpět do Redisu, odkud je můžeme
+získat. Poslední skript slouží k&nbsp;získání všech informací o úlohách, které
+zhavarovaly. Vypíše se typ úlohy, kdy byla spuštěna, samotná výjimka apod.:</p>
+
+<pre>
+from redis import Redis
+from rq import Queue
+from time import sleep
+&nbsp;
+from worker import do_work
+&nbsp;
+&nbsp;
+q_failed = Queue("failed", connection=Redis())
+&nbsp;
+print("Reading failed jobs")
+&nbsp;
+job_ids = <strong>q_failed.job_ids</strong>
+&nbsp;
+print(job_ids)
+&nbsp;
+for job_id in job_ids:
+    print(job_id)
+    job = <strong>q_failed.fetch_job(job_id)</strong>
+    print(job.origin)
+    print(job.enqueued_at)
+    print(job.started_at)
+    print(job.ended_at)
+    print(job.exc_info)
+</pre>
+
+<p>V&nbsp;našem případě bychom měli získat přibližně následující informace
+(samozřejmě se mohou lišit časová razítka):</p>
+
+<pre>
+Reading failed jobs
+['62d5d473-cc31-4738-8397-7dd18b09fe64']
+62d5d473-cc31-4738-8397-7dd18b09fe64
+default
+2018-11-28 16:24:45.094810
+2018-11-28 16:24:45.103332
+2018-11-28 16:24:47.107423
+Traceback (most recent call last):
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/worker.py", line 793, in perform_job
+    rv = job.perform()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 599, in perform
+    self._result = self._execute()
+  File "/home/tester/.local/lib/python3.6/site-packages/rq/job.py", line 605, in _execute
+    return self.func(*self.args, **self.kwargs)
+  File "./worker.py", line 7, in do_work
+    assert False
+AssertionError
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Opětovné spuštění zhavarovaných úloh</h2>
+
+<p>Po opravě workera (spuštění workera bez chyb atd.) můžeme všechny úlohy,
+které zhavarovaly, znovu spustit, a to následujícím způsobem:</p>
+
+<pre>
+$ <strong>rq requeue --all</strong>
+&nbsp;
+Requeueing 1 jobs from failed queue
+  [####################################]  100%
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: nezapomeňte na modifikátor
+<strong>-all</strong>, jinak se pouze vypíše lakonické hlášení &bdquo;Nothing
+to do&ldquo;.</div></p>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Využití burst režimu workerů</h2>
+
+<p>V&nbsp;případě potřeby je možné workery (či jen jednoho vybraného workera)
+spustit v&nbsp;takzvaném <i>burst</i> režimu. Worker pracující v&nbsp;tomto
+režimu se pokusí zpracovat všechny úlohy ze specifikované fronty (front) a
+následně se ukončí. Jedná se tedy o koncept dávkového zpracování (když
+například do systému přidáme výkonný stroj ve chvíli, kdy je nutné dokončit
+nějaké úlohy, ovšem tento stroj se nemá stát součástí
+&bdquo;clusteru&ldquo;):</p>
+
+<pre>
+$ <strong>rq worker --burst high low default</strong>
+</pre>
+
+<p>Pokud žádné úlohy na workera nečekají, je ihned ukončen; viz poslední
+vypsaná zpráva:</p>
+
+<pre>
+16:49:32 RQ worker 'rq:worker:localhost.30308' started, version 0.12.0
+16:49:32 *** Listening on default, low, high...
+16:49:32 Cleaning registries for queue: default
+16:49:32 Cleaning registries for queue: low
+16:49:32 Cleaning registries for queue: high
+16:49:32 RQ worker 'rq:worker:localhost.30308' done, quitting
+</pre>
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Jednoduchá aplikace (dashboard) pro sledování stavu front i workerů</h2>
+
+<p>Na adrese <a
+href="https://github.com/eoranged/rq-dashboard">rq-dashboard</a> najdeme
+užitečnou aplikaci sloužící pro sledování stavu front i workerů v&nbsp;systému
+RQ. Jde o jednoduchou utilitu (typu <i>dashboard</i>) naprogramovanou
+v&nbsp;Pythonu a využívající knihovnu <a
+href="http://flask.pocoo.org/">Flask</a> pro tvorbu webových aplikací.</p>
+
+<p>Samotná instalace dashboardu se provádí stejným způsobem, jako instalace
+jakéhokoli jiného Pythonovského balíčku. Podobně jako <a href="#k02">ve druhé
+kapitole</a> i nyní provedeme instalaci pouze pro aktuálně přihlášeného
+uživatele příkazem <strong>pip3 install --user</strong>:</p>
+
+<pre>
+$ <strong>pip3 install --user rq-dashboard</strong>
+Collecting rq-dashboard
+  Downloading https://files.pythonhosted.org/packages/ac/7b/e86764f563744d4244bb52eda4b09bff7ba78e9f97fdf3e5ad006d165ec0/rq-dashboard-0.3.12.tar.gz (95kB)
+    100% |████████████████████████████████| 102kB 1.0MB/s 
+Requirement already satisfied: rq&gt;=0.3.8 in ./.local/lib/python3.6/site-packages (from rq-dashboard)
+Requirement already satisfied: Flask in ./.local/lib/python3.6/site-packages (from rq-dashboard)
+Requirement already satisfied: redis in ./.local/lib/python3.6/site-packages (from rq-dashboard)
+Collecting arrow (from rq-dashboard)
+  Downloading https://files.pythonhosted.org/packages/e0/86/4eb5228a43042e9a80fe8c84093a8a36f5db34a3767ebd5e1e7729864e7b/arrow-0.12.1.tar.gz (65kB)
+    100% |████████████████████████████████| 71kB 2.4MB/s 
+Requirement already satisfied: click&gt;=5.0 in ./.local/lib/python3.6/site-packages (from rq&gt;=0.3.8-&gt;rq-dashboard)
+Requirement already satisfied: Jinja2&gt;=2.4 in ./.local/lib/python3.6/site-packages (from Flask-&gt;rq-dashboard)
+Requirement already satisfied: itsdangerous&gt;=0.21 in ./.local/lib/python3.6/site-packages (from Flask-&gt;rq-dashboard)
+Requirement already satisfied: Werkzeug&gt;=0.7 in ./.local/lib/python3.6/site-packages (from Flask-&gt;rq-dashboard)
+Requirement already satisfied: python-dateutil in ./.local/lib/python3.6/site-packages (from arrow-&gt;rq-dashboard)
+Requirement already satisfied: MarkupSafe&gt;=0.23 in ./.local/lib/python3.6/site-packages (from Jinja2&gt;=2.4-&gt;Flask-&gt;rq-dashboard)
+Requirement already satisfied: six&gt;=1.5 in /usr/lib/python3.6/site-packages (from python-dateutil-&gt;arrow-&gt;rq-dashboard)
+Installing collected packages: arrow, rq-dashboard
+  Running setup.py install for arrow ... done
+  Running setup.py install for rq-dashboard ... done
+Successfully installed arrow-0.12.1 rq-dashboard-0.3.12
+</pre>
+
+<p>Po úspěšné (alespoň doufejme) instalaci se dashboard spustí příkazem
+<strong>rq-dashboard</strong>:</p>
+
+<pre>
+$ <strong>rq-dashboard </strong>
+RQ Dashboard version 0.3.12
+ * Running on http://0.0.0.0:9181/ (Press CTRL+C to quit)
+...
+...
+...
+</pre>
+
+<p>Povšimněte si adresy, na které je dashboard dostupný. Pokud tuto adresu
+(včetně portu!) zadáte do webového prohlížeče s&nbsp;podporou JavaScriptu,
+dashboard se zobrazí a je s&nbsp;ním možné provádět základní operace
+s&nbsp;frontami.</p>
+
+<p><div class="rs-tip-major">Poznámka: obsah dashboardu se periodicky obnovuje,
+takže je skutečně nutné použít prohlížeč s&nbsp;podporou JavaScriptu. Lynx
+například není použitelný (i když by tak minimalistickému projektu, jako je RQ,
+možná docela slušel).</div></p>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Základní operace prováděné na dashboardu</h2>
+
+<p>Zdlouhavý popis dashboardu a jeho funkcí je pravděpodobně zbytečný, protože
+je vše dobře patrné z&nbsp;následujících screenshotů:</p>
+
+<a href="https://www.root.cz/obrazek/347326/"><img src="https://i.iinfo.cz/images/368/rq-4-prev.png" class="image-347326" alt="&#160;" width="370" height="261" /></a>
+<p><i>Obrázek 4: Takto vypadá dashboard ve chvíli, kdy systém RQ neobsahuje
+žádné fronty a nejsou k&nbsp;němu připojeni ani žádní workeři.</i></p>
+
+<a href="https://www.root.cz/obrazek/347327/"><img src="https://i.iinfo.cz/images/368/rq-5-prev.png" class="image-347327" alt="&#160;" width="364" height="270" /></a>
+<p><i>Obrázek 5: Zobrazení dvou workerů, přičemž první z&nbsp;nich přebírá
+úlohy z&nbsp;fronty pojmenované &bdquo;high&ldquo; a druhý z&nbsp;fronty
+&bdquo;low&ldquo;. Workeři jsou ve stavu &bdquo;idle&ldquo;.</i></p>
+
+<a href="https://www.root.cz/obrazek/347328/"><img src="https://i.iinfo.cz/images/368/rq-6-prev.png" class="image-347328" alt="&#160;" width="364" height="270" /></a>
+<p><i>Obrázek 6: Do front &bdquo;high&ldquo; i &bdquo;low&ldquo; byly přidány
+úlohy, workeři je začali zpracovávat.</i></p>
+
+<a href="https://www.root.cz/obrazek/347329/"><img src="https://i.iinfo.cz/images/368/rq-7-prev.png" class="image-347329" alt="&#160;" width="293" height="270" /></a>
+<p><i>Obrázek 7: Zobrazení všech úloh, které jsou v&nbsp;dané chvíli ve frontě
+&bdquo;high&ldquo;.</i></p>
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu byly uloženy do Git repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce:</p>
+
+<table>
+<tr><th>#</th><th>Skript</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>1</td><td>worker.py</td><td>implementace jednoduchého workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/worker.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/worker.py</a></td></tr>
+<tr><td>2</td><td>enqueue_work.py</td><td>přidání úlohy do fronty</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_work.py</a></td></tr>
+<tr><td>3</td><td>enqueue_more_work.py</td><td>přidání více úloh do fronty</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example01/enqueue_more_work.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>4</td><td>worker.py</td><td>worker akceptující parametr</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/worker.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/worker.py</a></td></tr>
+<tr><td>5</td><td>enqueue_work.py</td><td>přidání úlohy s parametrem do fronty</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/enqueue_work.py</a></td></tr>
+<tr><td>6</td><td>enqueue_more_work.py</td><td>přidání více úloh do fronty</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example02/enqueue_more_work.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>7</td><td>worker.py</td><td>worker akceptující parametr</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example03/worker.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example03/worker.py</a></td></tr>
+<tr><td>8</td><td>enqueue_work_into_queues.py</td><td>přidání úloh do pojmenovaných front</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example03/enqueue_work_into_queues.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example03/enqueue_work_into_queues.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>9</td><td>worker.py</td><td>worker provádějící &bdquo;složitější&ldquo; výpočet</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example04/worker.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example04/worker.py</a></td></tr>
+<tr><td>10</td><td>deque_work_results.py</td><td>získání výsledků úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example04/deque_work_results.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example04/deque_work_results.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>11</td><td>worker.py</td><td>worker, který zhavaruje</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example05/worker.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example05/worker.py</a></td></tr>
+<tr><td>12</td><td>get_failures.py</td><td>získání výsledků úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/rq/example05/get_failures.py">https://github.com/tisnik/message-queues-examples/blob/master/rq/example05/get_failures.py</a></td></tr>
+</table>
+
+<p><div class="rs-tip-major">Poznámka: demonstrační příklady byly odladěny pro
+RQ (Redis Queue) verze 0.12 a pro Python 3.6.3. Měly by však být funkční i pro
+všechny ostatní verze Pythonu podporované knihovnou RQ, tj.&nbsp;i Pythonem 2.7
+a vyšším.</div></p>
+
+<p><div class="rs-tip-major">Poznámka<sup>2</sup>: nedejte se prosím zmást
+názvem repositáře. Interně totiž RQ používá právě frontu/fronty zpráv a
+v&nbsp;dalších článcích se zaměříme i na jiná existující řešení s&nbsp;frontami
+zpráv.</div></p>
+
+
+
+<p><a name="k20"></a></p>
+<h2 id="k20">20. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2018</small></p>
+</body>
+</html>
+
