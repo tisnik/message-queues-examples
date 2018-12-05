@@ -9,6 +9,7 @@ for task in async_tasks:
     print(task.backend)
     print(task.ready())
     print(task.get())
+    print(task.ready())
 
     print(task.get(timeout=5))
 
