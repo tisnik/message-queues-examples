@@ -5,6 +5,7 @@ print(result)
 print(result.backend)
 print(result.ready())
 print(result.get())
+print(result.ready())
 
 print(result.get(timeout=5))
 
