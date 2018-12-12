@@ -1,0 +1,1481 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>Ve druhém a současně i závěrečném článku o projektu Celery si nejprve ukážeme dva nástroje určené pro sledování stavu workerů, úloh a front. Dále si popíšeme způsob tvorby periodických úloh, použití plánovače a na závěr se též zmíníme o konceptu použití většího množství front.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)</a></p>
+<p><a href="#k02">2. Příprava pro otestování možností systému Celery</a></p>
+<p><a href="#k03">3. Nástroj <strong>celery events</strong> pro zobrazení stavu workerů a úloh</a></p>
+<p><a href="#k04">4. Zobrazení podrobnějších informací o vybrané úloze</a></p>
+<p><a href="#k05">5. Webový nástroj <strong>Flower</strong> pro monitoring i řízení naplánovaných úloh</a></p>
+<p><a href="#k06">6. Instalace a spuštění nástroje <strong>Flower</strong></a></p>
+<p><a href="#k07">7. Informace zobrazované nástrojem <strong>Flower</strong></a></p>
+<p><a href="#k08">8. HTTP API nabízené nástrojem <strong>Flower</strong></a></p>
+<p><a href="#k09">9. Periodické spouštění úlohy</a></p>
+<p><a href="#k10">10. Použití plánovače <strong>celery beat</strong></a></p>
+<p><a href="#k11">11. Naplánování spouštění úloh podobné nástroji cron</a></p>
+<p><a href="#k12">12. Současné spuštění workerů i plánovače</a></p>
+<p><a href="#k13">13. Využití většího množství front</a></p>
+<p><a href="#k14">14. Worker přiřazený jediné frontě</a></p>
+<p><a href="#k15">15. Naplánovaní úloh pro jednotlivé workery</a></p>
+<p><a href="#k16">16. Sledování většího množství workerů a front</a></p>
+<p><a href="#k17">17. Worker přiřazený většímu množství front</a></p>
+<p><a href="#k18">18. Sledování tří front zpracovávaných jediným workerem</a></p>
+<p><a href="#k19">19. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k20">20. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)</h2>
+
+<p>Na <a
+href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/">úvodní
+článek o systému Celery</a> dnes navážeme, protože se budeme zabývat
+složitějšími příklady použití. V&nbsp;první části budou popsány dva nástroje,
+které jsou určeny pro sledování stavu front popř.&nbsp;naplánovaných úloh a
+workerů, kteří úlohy zpracovávají. Jedná se o standardní nástroj <strong>celery
+events</strong> s&nbsp;textovým uživatelským rozhraním a dále nástroj
+pojmenovaný <i>Flower</i>, který svým uživatelům nabízí jak webové rozhraní,
+tak i poměrně jednoduše použitelné REST API.</p>
+
+<a href="https://www.root.cz/obrazek/347323/"><img src="https://i.iinfo.cz/images/368/rq-1.png" class="image-347323" alt="&#160;" width="309" height="135" /></a>
+<p><i>Obrázek 1: Typická konfigurace systému s&nbsp;frontami úloh.</i></p>
+
+<p>Druhá část článku bude věnována poměrně často vyžadované funkcionalitě
+&ndash; jedná se o nutnost spouštění vybraných úloh v&nbsp;určený časový
+okamžik nebo dokonce periodicky (například každou hodinu, na začátku každého
+pracovního dne apod.). Závěrečná část článku bude věnována popisu použití
+většího množství (pojmenovaných) front. Úlohy je totiž možné posílat do
+pojmenovaných front a samotní workeři mohou úlohy vybírat pouze
+z&nbsp;nastavených front. Vše si samozřejmě ukážeme na demonstračních
+příkladech.</p>
+
+<img src="https://i.iinfo.cz/images/210/celery2-1.png" class="image-348183" alt="&#160;" width="307" height="443" />
+<p><i>Obrázek 2: Ve skutečnosti však může být konfigurace Celery složitější.
+Můžeme například použít tři fronty, některé workery připojit na jedinou frontu
+a další workery na dvě či dokonce na všechny tři fronty.</i></p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Příprava pro otestování možností systému Celery</h2>
+
+<p>Podobně, jako tomu bylo v&nbsp;úvodním článku o Celery i v&nbsp;článcích o
+konkurenčním projektu <i>Redis Queue (RQ)</i>, použijeme společně
+s&nbsp;nástrojem Celery i systém Redis, a to jak pro realizaci takzvaného
+<i>brokera</i> (tj.&nbsp;vlastní fronty resp.&nbsp;několika front, do nichž se
+ukládají naplánované úlohy), tak i pro implementaci <i>backendu</i> (ten
+primárně slouží k&nbsp;uložení výsledků úloh, popř.&nbsp;i pro uložení
+informací o výjimkách, pokud úloha zhavaruje). Budeme přitom předpokládat, že
+je Redis <a
+href="https://raw.githubusercontent.com/tisnik/presentations/master/redis/redis.conf">nakonfigurovaný
+takovým způsobem</a>, aby byl dostupný pro lokální uživatele, což v&nbsp;praxi
+znamená, že bude naslouchat pouze na síťovém zařízení
+<strong>localhost</strong>:</p>
+
+<pre>
+$ <strong>redis-server redis.conf</strong>
+</pre>
+
+<p>V&nbsp;navazujících kapitolách si ukážeme použití dvou nástrojů určených pro
+monitoring front a workerů. Z&nbsp;tohoto důvodu použijeme <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/tasks.py">tuto
+implementaci jednoduchého workera</a>, v&nbsp;němž jsou předepsány dvě úlohy,
+jedna pro součet dvou číselných hodnot, druhá pro jejich součin. Funkce
+<strong>sleep()</strong> simuluje workery s&nbsp;déletrvající operací:</p>
+
+<pre>
+from time import sleep
+from celery import Celery
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+@app.task
+def add(x, y):
+    print("Working, received parameters {} and {} to add".format(x, y))
+    sleep(2)
+    result = x + y
+    print("Done with result {}".format(result))
+    return result
+&nbsp;
+&nbsp;
+@app.task
+def multiply(x, y):
+    print("Working, received parameters {} and {} to multiply".format(x, y))
+    sleep(2)
+    result = x * y
+    print("Done with result {}".format(result))
+    return result
+</pre>
+
+<p>Celery s&nbsp;tímto workerem spustíme jednoduše. Pouze musíme dbát na to,
+aby se spuštění provedlo v&nbsp;adresáři obsahujícím implementaci workera:</p>
+
+<pre>
+$ <strong>cd message-queues-examples/celery/example06/</strong>
+&nbsp;
+$ <strong>celery -A tasks worker --loglevel=info</strong>
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si, že jednotlivé úlohy budou
+i v&nbsp;nejrychlejším možném případě dokončeny až po dvou sekundách. Workeři
+jsou tímto způsobem zpomaleni schválně, aby bylo možné monitorovat stav úloh i
+stav front s&nbsp;využitím dále popsaných nástrojů pro sledování činnosti
+Celery.</div></p>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Nástroj <strong>celery events</strong> pro zobrazení stavu workerů a úloh</h2>
+
+<p>Pro sledování stavu úloh a workerů (a nepřímo i front) slouží nástroj
+vybavený jednoduchým textovým uživatelským rozhraním (TUI), který je součástí
+základní instalace Celery. Tento nástroj se spustí příkazem <strong>celery
+events</strong>, protože skutečně zachycuje a zobrazuje události, ke kterým
+v&nbsp;průběhu činnosti Celery dochází (naplánování úlohy, její vykonání
+apod.).</p>
+
+<p><div class="rs-tip-major">Předností TUI je možnost spouštění i přes SSH
+(fajnšmekři mohou použít i rsh nebo telnet :-). Ostatně oba screenshoty
+v&nbsp;této kapitole vznikly po připojení k&nbsp;serveru, na němž běží Celery.
+Nástroj Flower taktéž umožňuje sledování vzdáleného systému, ale k&nbsp;tomuto
+účelu používá webové rozhraní, takže konfigurace firewallu atd. může být
+komplikovanější (popř.&nbsp;je nutné nastavit autentizaci pro omezení přístupu
+k&nbsp;webovému rozhraní).</div></p>
+
+<p>Nástroj <strong>celery events</strong> můžeme samozřejmě spustit i ve
+chvíli, kdy nejsou žádné úlohy ani naplánovány ani vykonávány:</p>
+
+<pre>
+$ <strong>cd message-queues-examples/celery/example06/</strong>
+&nbsp;
+$ <strong>celery events</strong>
+</pre>
+
+<p>V&nbsp;tomto případě by se mělo zobrazit celoobrazovkové (či spíše
+celoterminálové) textové uživatelské rozhraní, které bude vypadat přibližně
+takto:</p>
+
+<a href="https://www.root.cz/obrazek/348184/"><img src="https://i.iinfo.cz/images/210/celery2-2-prev.png" class="image-348184" alt="&#160;" width="370" height="241" /></a>
+<p><i>Obrázek 3: Spuštění nástroje <strong>celery events</strong> ve chvíli,
+kdy nejsou dokončeny žádné úlohy. Povšimněte si, že se zobrazil počet
+spuštěných workerů i počet čekajících úloh (nula v&nbsp;tomto případě)</i></p>
+
+<p>Nyní nám pouze zbývá spustit několik úloh, které budou realizovány workerem,
+o němž jsme se zmínili v&nbsp;předchozí kapitole. Pro naplánování úloh
+s&nbsp;jejich vložením do fronty je použit <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_more_work.py">tento
+skript</a>, v&nbsp;němž se spustí úloha počítající součet, na kterou je
+navázána úloha počítající součin (koncept zřetězení úloh jsme si vysvětlili
+již v&nbsp;předchozím článku):</p>
+
+<pre>
+from tasks import add, multiply
+&nbsp;
+for i in range(10):
+    add.apply_async((i, i + 1), link=multiply.s(i))
+</pre>
+
+<p>Následně všech deset úloh naplánujeme spuštěním tohoto skriptu
+z&nbsp;příkazového řádku:</p>
+
+<pre>
+$ <strong>cd message-queues-examples/celery/example06/</strong>
+&nbsp;
+$ <strong>python3 enqueue_more_work.py</strong>
+</pre>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Zobrazení podrobnějších informací o vybrané úloze</h2>
+
+<p>V&nbsp;terminálu, v&nbsp;němž jsme spustili příkaz <strong>celery
+events</strong>, by se nyní měly jednotlivé úlohy vypsat, takže by obsah
+obrazovky mohl vypadat například takto:</p>
+
+<a href="https://www.root.cz/obrazek/348185/"><img src="https://i.iinfo.cz/images/210/celery2-3-prev.png" class="image-348185" alt="&#160;" width="370" height="241" /></a>
+<p><i>Obrázek 4: Seznam naplánovaných úloh. Všechny úlohy, které jsou
+zobrazeny, čekají ve frontě na nějakého workera, který je bude ochoten
+zpracovat.</i></p>
+
+<p>V&nbsp;případě, že se výsledek úlohy uložil do nakonfigurovaného
+<i>backendu</i> (například opět do Redisu), můžeme si tento výsledek snadno
+zobrazit. Taktéž si můžeme zobrazit podrobnější informace o úloze, která
+prozatím nebyla žádným workerem zpracována, tj.&nbsp;takové úlohy, která je
+uložena v&nbsp;některé frontě (připomeňme si, že výchozí fronta se jmenuje
+<i>celery</i>, stav úlohy bude <strong>PENDING</strong>). Způsob, jakým jsou
+tyto informace prezentovány uživateli, je vidět na třetím screenshotu:</p>
+
+<a href="https://www.root.cz/obrazek/348186/"><img src="https://i.iinfo.cz/images/210/celery2-4-prev.png" class="image-348186" alt="&#160;" width="370" height="241" /></a>
+<p><i>Obrázek 5: Zobrazení podrobnějších informací o vybrané úloze po stisku
+klávesy <strong>i</strong>.</i></p>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Webový nástroj <strong>Flower</strong> pro monitoring i řízení naplánovaných úloh</h2>
+
+<p>Výše popsaný nástroj pro zobrazení stavu workerů a úloh sice může být
+užitečný, ovšem při administraci Celery nenabízí všechny potřebné operace a ani
+například neumožňuje dlouhodobější sledování využití front, workerů a počítačů
+zapojených do nakonfigurovaného clusteru. Tyto operace, které jsou ve
+skutečnosti poměrně často využívány jak vývojáři, tak i (a to možná častěji)
+administrátory, nabízí jiný nástroj, který se jmenuje <i>Flower</i>. Jméno
+tohoto nástroje není odvozeno od květiny, ale od slova <i>flow</i>, což
+naznačuje i některé funkce, které <i>Flower</i> uživatelům nabízí (liší se i
+výslovnost, která je taktéž odvozena od &bdquo;flow&ldquo;).</p>
+
+<p>Mezi základní operace nástroje <i>Flower</i> patří pochopitelně zobrazení
+úloh ve frontách a taktéž zobrazení případných výsledků úloh (pokud je ovšem
+nakonfigurován <i>backend</i> pro uložení výsledků). Mezi další podporované
+operace patří:</p>
+
+<ol>
+<li>Zobrazení historie úloh (vykonané úlohy, pády apod.).</li>
+<li>Zobrazení statistiky o workerech i o frontách.</li>
+<li>Zobrazení grafů s&nbsp;naplánovanými úlohami, dokončenými úlohami, zaplněností front atd.</li>
+<li>Jednotlivé úlohy lze přímo z&nbsp;UI odstranit.</li>
+<li>Nakonfigurovat lze i fronty (přidání, vymazání atd.), pokud tuto operaci podporuje broker.</li>
+<li>Nastavení škálovatelnosti workerů (počet podprocesů).</li>
+<li>Aplikační programové rozhraní k&nbsp;většině operací.</li>
+</ol>
+
+<a href="https://www.root.cz/obrazek/348192/"><img src="https://i.iinfo.cz/images/210/celery2-10-prev.png" class="image-348192" alt="&#160;" width="338" height="270" /></a>
+<p><i>Obrázek 6: Prakticky celé webové rozhraní nástroje Flower (kromě grafů)
+je stylizováno do barvy celeru.</i></p>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Instalace a spuštění nástroje <strong>Flower</strong></h2>
+
+<p>Nástroj <i>Flower</i> se instaluje, podobně jako další aplikace, nástroje a
+knihovny naprogramované v&nbsp;Pythonu, s&nbsp;využitím utility
+<strong>pip</strong> popř.&nbsp;<strong>pip3</strong>. Pro účely otestování si
+<i>Flower</i> nainstalujeme lokálně, tj.&nbsp;nástroj bude dostupný pouze pro
+aktuálně přihlášeného uživatele, protože se instalace provede do adresáře
+<strong>~/.local</strong>:</p>
+
+<pre>
+$ <strong>pip3 install --user flower</strong>
+</pre>
+
+<p>Samotný průběh instalace není ničím výjimečný:</p>
+
+<pre>
+Collecting flower
+  Downloading https://files.pythonhosted.org/packages/48/7f/344a8f93cbd6669b4fd03c04d8f9a06e9023da7b61145dea5836433bbbe5/flower-0.9.2.tar.gz (1.3MB)
+    100% |████████████████████████████████| 1.3MB 853kB/s 
+Requirement already satisfied: celery&gt;=3.1.0 in /home/tester/.local/lib/python3.6/site-packages (from flower)
+Collecting tornado&gt;=4.2.0 (from flower)
+  Downloading https://files.pythonhosted.org/packages/e6/78/6e7b5af12c12bdf38ca9bfe863fcaf53dc10430a312d0324e76c1e5ca426/tornado-5.1.1.tar.gz (516kB)
+    100% |████████████████████████████████| 522kB 1.6MB/s 
+Collecting babel&gt;=1.0 (from flower)
+  Downloading https://files.pythonhosted.org/packages/b8/ad/c6f60602d3ee3d92fbed87675b6fb6a6f9a38c223343ababdb44ba201f10/Babel-2.6.0-py2.py3-none-any.whl (8.1MB)
+    100% |████████████████████████████████| 8.1MB 198kB/s 
+Requirement already satisfied: pytz in /usr/lib/python3.6/site-packages (from flower)
+Requirement already satisfied: kombu&lt;5.0,&gt;=4.2.0 in /home/tester/.local/lib/python3.6/site-packages (from celery&gt;=3.1.0-&gt;flower)
+Requirement already satisfied: billiard&lt;3.6.0,&gt;=3.5.0.2 in /home/tester/.local/lib/python3.6/site-packages (from celery&gt;=3.1.0-&gt;flower)
+Requirement already satisfied: amqp&lt;3.0,&gt;=2.1.4 in /home/tester/.local/lib/python3.6/site-packages (from kombu&lt;5.0,&gt;=4.2.0-&gt;celery&gt;=3.1.0-&gt;flower)
+Requirement already satisfied: vine&gt;=1.1.3 in /home/tester/.local/lib/python3.6/site-packages (from amqp&lt;3.0,&gt;=2.1.4-&gt;kombu&lt;5.0,&gt;=4.2.0-&gt;celery&gt;=3.1.0-&gt;flower)
+Installing collected packages: tornado, babel, flower
+  Running setup.py install for tornado ... done
+  Running setup.py install for flower ... done
+Successfully installed babel-2.6.0 flower-0.9.2 tornado-5.1.1
+</pre>
+
+<p>Vzhledem k&nbsp;tomu, že instalace byla označena za úspěšnou (viz poslední
+řádek z&nbsp;předchozího výpisu), měl by být na <strong>$PATH</strong> dostupný
+i příkaz <strong>flower</strong>, což si pro jistotu ověříme s&nbsp;využitím
+příkazu <strong>whereis</strong>:</p>
+
+<pre>
+$ <strong>whereis flower</strong>
+flower: /home/tester/.local/bin/flower
+</pre>
+
+<p>Po úspěšné instalaci si zkusme tento příkaz spustit, a to tím nejsnadnějším
+způsobem &ndash; bez jakýchkoli parametrů. Spuštění by ideálně mělo být
+provedeno z&nbsp;adresáře, v&nbsp;němž jsou nakonfigurování workeři:</p>
+
+<pre>
+$ <strong>flower </strong>
+[I 181210 22:59:05 command:139] Visit me at http://localhost:5555
+[I 181210 22:59:06 command:144] Broker: redis://localhost:6379/0
+[I 181210 22:59:06 command:147] Registered tasks: 
+    ['celery.accumulate',
+     'celery.backend_cleanup',
+     'celery.chain',
+     'celery.chord',
+     'celery.chord_unlock',
+     'celery.chunks',
+     'celery.group',
+     'celery.map',
+     'celery.starmap']
+[I 181210 22:59:06 mixins:224] Connected to redis://localhost:6379/0
+</pre>
+
+<p>Jak je z&nbsp;vypsaných zpráv patrné, je webové uživatelské rozhraní Floweru
+dostupné na adrese localhost:5555. Ve skutečnosti ovšem ve výchozím nastavení
+není přístup omezen ani z&nbsp;okolních počítačů (!), což je sice užitečné,
+ovšem potenciálně nebezpečné. V&nbsp;případě potřeby můžete použít přepínače
+<strong>--auth</strong>, <strong>--basic-auth</strong>
+popř.&nbsp;<strong>--oauth2*</strong> pro povolení autentizace.</p>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. Informace zobrazované nástrojem <strong>Flower</strong></h2>
+
+<p>Nástroj <i>Flower</i> umožňuje zobrazit jak základní, tak i některé
+podrobnější informace o jednotlivých workerech, frontách a úlohách. Vzhledem
+k&nbsp;tomu, že se jedná o nástroj s&nbsp;poměrně přehledným uživatelským
+rozhraním, bude pravděpodobně nejjednodušší si možnosti uživatelského rozhraní
+popsat na sérii screenshotů:</p>
+
+<a href="https://www.root.cz/obrazek/348187/"><img src="https://i.iinfo.cz/images/210/celery2-5-prev.png" class="image-348187" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 8: Výchozí pohled na sledovaný systém Celery. Vidíme, že je
+k&nbsp;dispozici pouze jediný worker s&nbsp;označením
+<strong>celery@localhost.localdomain</strong>, na němž zrovna není spuštěna
+žádná úloha.</i></p>
+
+<a href="https://www.root.cz/obrazek/348188/"><img src="https://i.iinfo.cz/images/210/celery2-6-prev.png" class="image-348188" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 9: Na dalším listu můžeme vidět, že worker je ve skutečnosti
+realizován osmi procesy, jejichž ID (PID) jsou zobrazeny, stejně jako PID
+vlastního workera, který jsme spustili z&nbsp;příkazové řádky. V&nbsp;pravé
+části je možné počet subprocesů snížit či naopak zvýšit.</i></p>
+
+<a href="https://www.root.cz/obrazek/348189/"><img src="https://i.iinfo.cz/images/210/celery2-7-prev.png" class="image-348189" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 10: Ve výchozím nastavení se používá jediná fronta pojmenovaná
+&bdquo;celery&ldquo;.</i></p>
+
+<a href="https://www.root.cz/obrazek/348190/"><img src="https://i.iinfo.cz/images/210/celery2-8-prev.png" class="image-348190" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 11: Podrobnější informace o jednotlivých úlohách, které byly
+naplánovány. Povšimněte si, že u každé úlohy máme k&nbsp;dispozici jak její
+jméno, tak i parametry, s&nbsp;nimiž byla zavolána. U aktivních úloh (které se
+právě zpracovávají) je samozřejmě k&nbsp;dispozici i ID příslušného
+procesu.</i></p>
+
+<a href="https://www.root.cz/obrazek/348191/"><img src="https://i.iinfo.cz/images/210/celery2-9-prev.png" class="image-348191" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 12: Podrobnější informace o vybrané úloze.</i></p>
+
+<a href="https://www.root.cz/obrazek/348192/"><img src="https://i.iinfo.cz/images/210/celery2-10-prev.png" class="image-348192" alt="&#160;" width="338" height="270" /></a>
+<p><i>Obrázek 13: List se seznamem úloh, které byly naplánovány a/nebo
+dokončeny.</i></p>
+
+<a href="https://www.root.cz/obrazek/348193/"><img src="https://i.iinfo.cz/images/210/celery2-11-prev.png" class="image-348193" alt="&#160;" width="346" height="270" /></a>
+<p><i>Obrázek 14: Grafy s&nbsp;informacemi o zpracovaných úlohách, času
+dokončení jednotlivých úloh, úloh, které nebyly z&nbsp;nějakého důvodu
+dokončeny (vznik výjimky) a konečně počtu úloh ve frontě nebo ve frontách.
+V&nbsp;dalších kapitolách uvidíme, jakým způsobem se zobrazí větší množství
+front.</i></p>
+ 
+<p><div class="rs-tip-major">Poznámka: další screenshoty s&nbsp;popisem budou
+uvedeny v&nbsp;navazujících kapitolách, v&nbsp;nichž se zmíníme o možnosti
+využití většího množství front.</div></p>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. HTTP API nabízené nástrojem <strong>Flower</strong></h2>
+
+<p>V&nbsp;některých případech je užitečné využít HTTP API nabízené nástrojem
+<strong>Flower</strong>. Opět bude nejužitečnější si některé možnosti API
+ukázat na příkladech. Pro jednoduchost bude používat nástroj
+<strong>curl</strong>, ovšem samozřejmě nám nic nebrání použít jakýkoli jiný
+nástroj či knihovnu umožňující komunikaci s&nbsp;využitím HTTP.</p>
+
+<p>Zobrazení seznamu všech workerů:</p>
+
+<pre>
+$ <strong>curl -v localhost:5555/api/workers</strong>
+&nbsp;
+{"celery@localhost.localdomain": {"stats": {"total": {}, "pid": 11798, "clock": "100", "pool": 
+...
+...
+...
+</pre>
+
+<p>Informace o zaplnění fronty či front:</p>
+
+<pre>
+$ <strong>curl -v localhost:5555/api/queues/length</strong>
+&nbsp;
+{"active_queues": [{"name": "celery", "messages": 0}]}
+</pre>
+
+<p>Zobrazení úloh:</p>
+
+<pre>
+$ <strong>curl -v localhost:5555/api/tasks</strong>
+&nbsp;
+...
+... dlouhý JSON s&nbsp;informacemi o úlohách ...
+...
+</pre>
+
+<p>Zobrazení výsledku či stavu vybrané úlohy:</p>
+
+<pre>
+$ <strong>curl -v localhost:5555/api/task/result/534eff49-8029-4b4c-a380-3a18036702e0</strong>
+&nbsp;
+{"task-id": "534eff49-8029-4b4c-a380-3a18036702e0", "state": "PENDING"}
+</pre>
+
+<p>Znovuspuštění vybrané úlohy:</p>
+
+<pre>
+$ <strong>curl -v -X POST localhost:5555/api/task/revoke/534eff49-8029-4b4c-a380-3a18036702e0</strong>
+&nbsp;
+{"message": "Revoked '534eff49-8029-4b4c-a380-3a18036702e0'"}
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: pro spuštění úlohy je nutné použít HTTP
+metodu POST!</div></p>
+
+<p>Další příklady naleznete na adrese <a
+href="http://nbviewer.jupyter.org/github/mher/flower/blob/master/docs/api.ipynb">http://nbviewer.jupyter.org/github/mher/flower/blob/master/docs/api.ipynb</a>
+ve formě Python Notebooku.</p>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Periodické spouštění úlohy</h2>
+
+<p>Ve všech demonstračních příkladech, které jsme si prozatím ukázali, se úlohy
+vkládaly do fronty s&nbsp;tím, že budou vykonány v&nbsp;nejbližším možném čase.
+Takové úlohy jsou vybraným workerem přečteny, zpracovány a jejich výsledky
+popř.&nbsp;uloženy do zvoleného datového úložiště (<i>backendu</i>).
+V&nbsp;některých aplikacích se ovšem můžeme setkat i s&nbsp;jiným typem úloh.
+Jedná se o takové úlohy, které mají být spouštěny buď periodicky popř.&nbsp;se
+mají spustit jednou, ovšem až v&nbsp;definovaný okamžik. I takové úlohy je
+možné v&nbsp;Celery vytvářet &ndash; ostatně právě z&nbsp;tohoto důvodu se
+nejedná o čistou a přímočarou implementaci <i>task queue</i>, ale o
+komplikovanější systém.</p>
+
+<p>Nejprve se podívejme, jakým způsobem je možné zajistit, aby se vytvořila
+úloha, která se bude periodicky opakovat.</p>
+
+<pre>
+from time import sleep
+from datetime import datetime
+from celery import Celery
+from celery.schedules import crontab
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+app.conf.beat_schedule = {
+    'run-every-two-seconds': {
+        'task': 'tasks.periodic_task',
+        'schedule': 2,
+        'args': (),
+    },
+}
+&nbsp;
+&nbsp;
+@app.task
+def periodic_task():
+    print("Working, called @ {now}".format(now=datetime.now()))
+    sleep(2)
+    print("Done")
+</pre>
+
+<p>Nová je prostřední část skriptu, v&nbsp;němž je specifikována konfigurace
+úlohy, která má být naplánována na spuštění každé dvě sekundy:</p>
+
+<pre>
+app.conf.beat_schedule = {
+    'run-every-two-seconds': {
+        'task': 'tasks.periodic_task',
+        'schedule': 2,
+        'args': (),
+    },
+}
+</pre>
+
+<p>Hodnota uložená pod klíčem <strong>task</strong> musí přesně specifikovat
+funkci označenou dekorátorem @app.task. Pod klíčem <strong>args</strong> mohou
+být uloženy případné argumenty (parametry) předávané úloze. Pojmenované
+parametry (pokud je samozřejmě úloha používá) se předávají přes
+<strong>kwargs</strong> ve formě slovníku. Posledním důležitým parametrem je
+parametr nazvaný <strong>relative</strong>, kterému lze přiřadit pravdivostní
+hodnotu True nebo False. Tímto parametrem se řídí význam časového údaje
+zadaného v&nbsp;<strong>schedule</strong>. Buď se jedná o relativní čas
+vztažený k&nbsp;okamžiku, kdy byl nastartován plánovač, nebo o čas absolutní
+vztažený k&nbsp;hodinám (při použití dvousekundového intervalu je chování
+prakticky totožné, ale pokud bychom například zadali celou hodinu, je již mezi
+relativním či absolutním chápáním času podstatný rozdíl).</p>
+
+<p>Specifikovat je možné přes parametr <strong>beat_schedule_filename</strong>
+i jméno souboru, do kterého budou uloženy informace o naplánovaných
+úlohách.</p>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Použití plánovače <strong>celery beat</strong></h2>
+
+<p>V&nbsp;případě, že budeme potřebovat periodicky spouštět úlohu či úlohy,
+musí se inicializovat plánovač (<i>scheduler</i>), který se v&nbsp;systému
+Celery nazývá <strong>celery beat</strong>. Spuštění plánovače se podobá
+spuštění workeru, pouze se použije odlišný podpříkaz:</p>
+
+<pre>
+$ <strong>celery -A tasks beat --loglevel=info</strong>
+&nbsp;
+celery beat v4.2.1 (windowlicker) is starting.
+__    -    ... __   -        _
+LocalTime -&gt; 2018-12-11 12:35:34
+Configuration -&gt;
+    . broker -&gt; redis://localhost:6379/0
+    . loader -&gt; celery.loaders.app.AppLoader
+    . scheduler -&gt; celery.beat.PersistentScheduler
+    . db -&gt; celerybeat-schedule
+    . logfile -&gt; [stderr]@%INFO
+    . maxinterval -&gt; 5.00 minutes (300s)
+[2018-12-11 12:35:34,595: INFO/MainProcess] beat: Starting...
+</pre>
+
+<p>Prakticky ihned po inicializaci plánovače se začnou do výchozí fronty
+vkládat nové načasované úlohy, což je patrné z&nbsp;logu:</p>
+
+<pre>
+[2018-12-11 12:35:34,607: INFO/MainProcess] Scheduler: Sending due task run-every-two-seconds (tasks.periodic_task)
+[2018-12-11 12:35:36,601: INFO/MainProcess] Scheduler: Sending due task run-every-two-seconds (tasks.periodic_task)
+[2018-12-11 12:35:38,601: INFO/MainProcess] Scheduler: Sending due task run-every-two-seconds (tasks.periodic_task)
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: plánovač skutečně úlohy pouze
+<i>plánuje</i>, tj.&nbsp;přidává je do fronty. Nedochází ovšem k&nbsp;jejich
+vykonání, protože k&nbsp;tomu je zapotřebí použít workery.</div></p>
+
+<p>Plánovač můžeme nechat běžet a v&nbsp;jiném terminálu si (ze stejného
+adresáře) spustíme workera:</p>
+
+<pre>
+$ <strong>celery -A tasks worker</strong>
+&nbsp; 
+ -------------- celery@localhost.localdomain v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-11 12:37:44
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7f1e571bc2e8
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; celery           exchange=celery(direct) key=celery
+</pre>
+
+<p>Vidíme, že na mém testovacím počítači s&nbsp;osmi jádry (4 fyzická jádra
+s&nbsp;hyper-threadingem) se spustilo osm podprocesů s&nbsp;workery. Ihned poté
+začnou tyto procesy zpracovávat naplánované úlohy, které si vyzvednou
+z&nbsp;fronty:</p>
+
+<pre>
+[2018-12-11 12:37:46,263: WARNING/ForkPoolWorker-8] Working, called @ 2018-12-11 12:37:46.263094
+[2018-12-11 12:37:46,263: WARNING/ForkPoolWorker-1] Working, called @ 2018-12-11 12:37:46.263146
+[2018-12-11 12:37:46,269: WARNING/ForkPoolWorker-3] Working, called @ 2018-12-11 12:37:46.268838
+[2018-12-11 12:37:46,274: WARNING/ForkPoolWorker-5] Working, called @ 2018-12-11 12:37:46.274475
+[2018-12-11 12:37:46,274: WARNING/ForkPoolWorker-6] Working, called @ 2018-12-11 12:37:46.274637
+[2018-12-11 12:37:46,281: WARNING/ForkPoolWorker-2] Working, called @ 2018-12-11 12:37:46.281300
+[2018-12-11 12:37:46,281: WARNING/ForkPoolWorker-4] Working, called @ 2018-12-11 12:37:46.281385
+[2018-12-11 12:37:46,288: WARNING/ForkPoolWorker-7] Working, called @ 2018-12-11 12:37:46.288331
+[2018-12-11 12:37:48,266: WARNING/ForkPoolWorker-8] Done
+[2018-12-11 12:37:48,266: WARNING/ForkPoolWorker-1] Done
+...
+...
+...
+</pre>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Naplánování spouštění úloh podobné nástroji cron</h2>
+
+<p>Při plánování úloh je možné použít podobný styl specifikace času, jaký je
+použit v&nbsp;nástroji <a href="https://linux.die.net/man/5/crontab">cron</a>
+(podobně se ovšem mohou nastavovat i úlohy v&nbsp;Jenkinsu a dalších
+nástrojích). V&nbsp;nejjednodušším případě se explicitně zadá čas spuštění:</p>
+
+<pre>
+app.conf.beat_schedule = {
+    # Executes every day morning at 8:45 a.m.
+    'add-every-day-morning': {
+        'task': 'tasks.add',
+        'schedule': <strong>crontab(hour=8, minute=45)</strong>,
+        'args': (1, 2),
+    },
+}
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si způsobu zadání argumentů,
+které se předají naplánované úloze.</div></p>
+
+<p>Taktéž je možné určit den v&nbsp;týdnu (ve výchozí časové zóně se začíná
+Nedělí):</p>
+
+<pre>
+app.conf.beat_schedule = {
+    # Executes every Monday morning at 7:30 a.m.
+    'add-every-monday-morning': {
+        'task': 'tasks.add',
+        'schedule': <strong>crontab(hour=7, minute=30, day_of_week=1)</strong>,
+        'args': (3, 4),
+    },
+}
+</pre>
+
+<p>Spuštění úlohy každých patnáct sekund:</p>
+
+<pre>
+'schedule': <strong>crontab(minute="*/15")</strong>,
+</pre>
+
+<p>Spuštění úlohy po čtyřech hodinách:</p>
+
+<pre>
+'schedule': <strong>crontab(hour="*/4")</strong>,
+</pre>
+
+<p>Spuštění úlohy pouze v&nbsp;pracovní dny:</p>
+
+<pre>
+'schedule': <strong>crontab(day_of_week="mon-fri")</strong>,
+</pre>
+
+<p>Možné jsou i kombinace podmínek:</p>
+
+<pre>
+'schedule': <strong>crontab(day_of_week="mon-fri", hour="*/4")</strong>,
+</pre>
+
+<p>Složitější schéma, kdy se má úloha spouštět v&nbsp;rámci jediné hodiny:</p>
+
+<pre>
+'schedule': <strong>crontab(minute="1/2,5-10,20,30-45,50-59/2")</strong>,
+</pre>
+
+<p>Použít lze i další možnosti (ty jsem popravdě nikdy nevyužil), například čas
+východu a západu Slunce nad Brnem:</p>
+
+<pre>
+'schedule': <strong>solar('sunrise', 49.19522, 16.60796)</strong>
+'schedule': <strong>solar('sunset', 49.19522, 16.60796)</strong>
+</pre>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Současné spuštění workerů i plánovače</h2>
+
+<p>Připomeňme si, že klasický worker se startuje příkazem:</p>
+
+<pre>
+$ <strong>celery -A tasks worker --loglevel=info</strong>
+</pre>
+
+<p>Zatímco plánovač se spouští nepatrně odlišným příkazem:</p>
+
+<pre>
+$ <strong>celery -A tasks beat --loglevel=info</strong>
+</pre>
+
+<p>Pokud budeme chtít spustit současně jak workera, tak i plánovač, není možné
+napsat pouze <strong>tasks beat worker</strong>, protože by nástroj Celery
+nerozuměl poslednímu slovu. Namísto toho spustíme běžný worker a nepovinným
+přepínačem <strong>-B</strong> si vynutíme současné spuštění plánovače:</p>
+
+<pre>
+$ <strong>celery -A tasks worker -B</strong>
+</pre>
+
+<p>Pro účely odladění nastavení Celery je samozřejmě praktičtější nechat si
+zobrazit všechny logovací informace (kromě úrovně debug):</p>
+
+<pre>
+$ <strong>celery -A tasks worker -B --loglevel=info</strong>
+</pre>
+
+<p>Po spuštění se skutečně zobrazí základní informace i o plánovači (zvýrazněný
+text):</p>
+
+<pre>
+ -------------- celery@localhost.localdomain v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-12 15:56:45
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7f51a781c048
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; celery           exchange=celery(direct) key=celery
+                
+&nbsp;
+[tasks]
+  . tasks.periodic_task
+&nbsp;
+<strong>[2018-12-12 15:56:45,301: INFO/Beat] beat: Starting...</strong>
+[2018-12-12 15:56:45,306: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-12-12 15:56:45,314: INFO/MainProcess] mingle: searching for neighbors
+[2018-12-12 15:56:46,332: INFO/MainProcess] mingle: all alone
+[2018-12-12 15:56:46,345: INFO/MainProcess] celery@localhost.localdomain ready.
+<strong>[2018-12-12 15:56:47,319: INFO/Beat] Scheduler: Sending due task run-every-two-seconds (tasks.periodic_task)</strong>
+</pre>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Využití většího množství front</h2>
+
+<p>Podívejme se ještě jednou na obrázek z&nbsp;první kapitoly, kde byla
+naznačena konfigurace systému se třemi frontami:</p>
+
+<img src="https://i.iinfo.cz/images/210/celery2-1.png" class="image-348183" alt="&#160;" width="307" height="443" />
+<p><i>Obrázek 15: Konfigurace systému s&nbsp;více frontami.</i></p>
+
+<p>S&nbsp;podobnou konfigurací se můžeme setkat i v&nbsp;praxi, protože je
+například užitečné rozdělit úlohy na základě očekávané náročnosti jejich
+vykonání (dlouhotrvající, krátkodobé), podle typu úlohy (databázové operace,
+posílání mailů, sledování dalších systémů), popř.&nbsp;podle toho, jak se úlohy
+spouští (ze skriptu, periodicky).</p>
+
+<p>Pro účely testování si vytvoříme nový projekt, v&nbsp;němž budou definovány
+tři úlohy rozlišené podle barvy:</p>
+
+<pre>
+from time import sleep
+from datetime import datetime
+from celery import Celery
+&nbsp;
+app = Celery('tasks')
+&nbsp;
+app.config_from_object('celeryconfig')
+&nbsp;
+&nbsp;
+@app.task
+def red_task():
+    print("Red task called @ {now}".format(now=datetime.now()))
+    sleep(2)
+    print("Red task done")
+&nbsp;
+&nbsp;
+@app.task
+def green_task():
+    print("Green task called @ {now}".format(now=datetime.now()))
+    sleep(2)
+    print("Green task done")
+&nbsp;
+&nbsp;
+@app.task
+def blue_task():
+    print("Blue task called @ {now}".format(now=datetime.now()))
+    sleep(2)
+    print("Blue task done")
+</pre>
+
+<p>Na těchto úlohách není nic zvláštního a v&nbsp;případě potřeby je můžeme
+naplánovat přes výchozí frontu &bdquo;celery&ldquo;.</p>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Worker přiřazený jediné frontě</h2>
+
+<p>Nyní je možné spustit workery, z&nbsp;nichž každý bude naslouchat na jiné
+pojmenované frontě. Fronta se specifikuje přepínačem <strong>-Q
+jméno_fronty</strong>. Navíc je většinou nutné workera pojmenovat, a to
+s&nbsp;využitím přepínače <strong>-n jméno_workera</strong>. Pokud pojmenování
+neprovedete, použije se hostname a to při větším množství současně běžících
+workerů bude způsobovat značné problémy.</p>
+
+<p>Celkem spustíme tři workery pojmenované &bdquo;red&ldquo;,
+&bdquo;green&ldquo;, &bdquo;blue&ldquo;, přičemž každý bude mít přiřazenu
+vlastní frontu &bdquo;red_queue&ldquo;, &bdquo;green_queue&ldquo; a
+&bdquo;blue_queue&ldquo;.</p>
+
+<h3>Worker &bdquo;red&ldquo;</h3>
+
+<pre>
+$ <strong>celery -A tasks worker -l info -Q red_queue -n red</strong>
+&nbsp; 
+ -------------- celery@red v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-11 20:38:26
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7f8652653c88
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; <strong>red_queue        exchange=red_queue(direct) key=red_queue</strong>
+&nbsp;                
+[2018-12-11 20:38:26,626: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-12-11 20:38:26,634: INFO/MainProcess] mingle: searching for neighbors
+[2018-12-11 20:38:27,651: INFO/MainProcess] mingle: sync with 1 nodes
+[2018-12-11 20:38:27,653: INFO/MainProcess] mingle: sync complete
+[2018-12-11 20:38:27,663: INFO/MainProcess] <strong>celery@red</strong> ready.
+[2018-12-11 20:38:37,644: INFO/MainProcess] Events of group {task} enabled by remote.
+</pre>
+
+<h3>Worker &bdquo;green&ldquo;</h3>
+
+<pre>
+$ <strong>celery -A tasks worker -l info -Q green_queue -n green</strong>
+&nbsp; 
+ -------------- celery@green v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-11 20:39:22
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7ff0eb87dc88
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; <strong>green_queue      exchange=green_queue(direct) key=green_queue</strong>
+&nbsp;
+[2018-12-11 20:39:22,810: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-12-11 20:39:22,818: INFO/MainProcess] mingle: searching for neighbors
+[2018-12-11 20:39:23,836: INFO/MainProcess] mingle: sync with 2 nodes
+[2018-12-11 20:39:23,838: INFO/MainProcess] mingle: sync complete
+[2018-12-11 20:39:23,854: INFO/MainProcess] <strong>celery@green ready.</strong>
+[2018-12-11 20:38:26,647: INFO/MainProcess] <strong>sync with celery@red</strong>
+[2018-12-11 20:39:27,645: INFO/MainProcess] Events of group {task} enabled by remote.
+</pre>
+
+<h3>Worker &bdquo;blue&ldquo;</h3>
+
+<pre>
+$ <strong>celery -A tasks worker -l info -Q blue_queue -n blue</strong>
+&nbsp; 
+ -------------- celery@blue v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-11 20:38:22
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7f96b46b1c88
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; <strong>blue_queue       exchange=blue_queue(direct) key=blue_queue</strong>
+&nbsp;
+[2018-12-11 20:38:22,966: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-12-11 20:38:22,974: INFO/MainProcess] mingle: searching for neighbors
+[2018-12-11 20:38:23,992: INFO/MainProcess] mingle: all alone
+[2018-12-11 20:38:24,003: INFO/MainProcess] <strong>celery@blue ready.</strong>
+[2018-12-11 20:38:26,647: INFO/MainProcess] <strong>sync with celery@red</strong>
+[2018-12-11 20:38:26,647: INFO/MainProcess] <strong>sync with celery@green</strong>
+[2018-12-11 20:38:37,644: INFO/MainProcess] Events of group {task} enabled by remote.
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Naplánovaní úloh pro jednotlivé workery</h2>
+
+<p>Nyní nám zbývá jediné &ndash; poslat jednotlivým workerům (přes jejich
+fronty) nějakou úlohu. Fronty přitom musíme <i>explicitně specifikovat</i>,
+protože nemáme žádného workera, který by zpracovával úlohy z&nbsp;výchozí
+fronty &bdquo;celery&ldquo;. Ve skutečnosti je specifikace fronty při plánování
+úlohy triviální operace:</p>
+
+<pre>
+from tasks import red_task, green_task, blue_task
+&nbsp;
+for _ in range(25):
+    red_task.apply_async(queue="red_queue")
+    green_task.apply_async(queue="green_queue")
+    blue_task.apply_async(queue="blue_queue")
+</pre>
+
+<p>Jakmile tento skript spustíme, začnou jednotliví workeři zpracovávat
+úlohy:</p>
+
+<h3>Worker &bdquo;red&ldquo;</h3>
+
+<pre>
+[2018-12-11 20:40:31,801: INFO/MainProcess] Received task: <strong>tasks.red_task</strong>[c73537d5-9aed-4e2f-94ac-8513d9cac65c]  
+[2018-12-11 20:40:31,803: WARNING/ForkPoolWorker-8] <strong>Red task called</strong> @ 2018-12-11 20:40:31.802849
+[2018-12-11 20:40:33,805: WARNING/ForkPoolWorker-8] <strong>Red task done</strong>
+[2018-12-11 20:40:33,811: INFO/ForkPoolWorker-8] <strong>Task tasks.red_task</strong>[c73537d5-9aed-4e2f-94ac-8513d9cac65c] succeeded in 2.0087841898202896s: None
+</pre>
+
+<h3>Worker &bdquo;green&ldquo;</h3>
+
+<pre>
+[2018-12-11 20:40:31,802: INFO/MainProcess] Received task: <strong>tasks.green_task</strong>[b3eae1aa-fdf5-4c92-84a9-94079203004e]  
+[2018-12-11 20:40:31,804: WARNING/ForkPoolWorker-8] <strong>Green task called</strong> @ 2018-12-11 20:40:31.804579
+[2018-12-11 20:40:33,806: WARNING/ForkPoolWorker-8] <strong>Green task done</strong>
+[2018-12-11 20:40:33,811: INFO/ForkPoolWorker-8] <strong>Task tasks.green_task</strong>[b3eae1aa-fdf5-4c92-84a9-94079203004e] succeeded in 2.0071335807442665s: None
+</pre>
+
+<h3>Worker &bdquo;blue&ldquo;</h3>
+
+<pre>
+[2018-12-11 20:40:31,805: INFO/MainProcess] Received task: <strong>tasks.blue_task</strong>[9aebfb6c-ed75-4c11-9a3b-d54317c6cdb6]  
+[2018-12-11 20:40:31,806: WARNING/ForkPoolWorker-8] <strong>Blue task called</strong> @ 2018-12-11 20:40:31.806742
+[2018-12-11 20:40:33,809: WARNING/ForkPoolWorker-8] <strong>Blue task done</strong>
+[2018-12-11 20:40:33,814: INFO/ForkPoolWorker-8] <strong>Task tasks.blue_task</strong>[9aebfb6c-ed75-4c11-9a3b-d54317c6cdb6] succeeded in 2.0078650191426277s: None
+</pre>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Sledování většího množství workerů a front</h2>
+
+<p>Ve chvíli, kdy je spuštěno větší množství workerů a je k&nbsp;dispozici více
+front, se samozřejmě změní i informace zobrazené nástrojem Flower:</p>
+
+<a href="https://www.root.cz/obrazek/348255/"><img src="https://i.iinfo.cz/images/51/celery2b-1-prev.png" class="image-348255" alt="&#160;" width="365" height="270" /></a>
+<p><i>Obrázek 16: Informace o třech workerech.</i></p>
+
+<a href="https://www.root.cz/obrazek/348256/"><img src="https://i.iinfo.cz/images/51/celery2b-2-prev.png" class="image-348256" alt="&#160;" width="365" height="270" /></a>
+<p><i>Obrázek 17: Broker má k&nbsp;dispozici trojici front.</i></p>
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Worker přiřazený většímu množství front</h2>
+
+<p>Worker může být nakonfigurován i takovým způsobem, že bude přijímat úlohy
+vložené do několika front. Pokud budete vytvářet instanci takového workera,
+předávají se jména všech front v&nbsp;jediném parametru <strong>-Q</strong>
+(jména jsou oddělena čárkou). Ukažme si, jak se takový worker nastartuje:</p>
+
+<pre>
+$ <strong>celery -A tasks worker -l info -Q red_queue,blue_queue,green_queue -n colorful</strong>
+ 
+ -------------- celery@colorful v4.2.1 (windowlicker)
+---- **** ----- 
+--- * ***  * -- Linux-4.14.11-200.fc26.x86_64-x86_64-with-fedora-26-Twenty_Six 2018-12-11 20:43:57
+-- * - **** --- 
+- ** ---------- [config]
+- ** ---------- .&gt; app:         tasks:0x7fc0a8d8fc50
+- ** ---------- .&gt; transport:   redis://localhost:6379/0
+- ** ---------- .&gt; results:     redis://localhost:6379/0
+- *** --- * --- .&gt; concurrency: 8 (prefork)
+-- ******* ---- .&gt; task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .&gt; <strong>blue_queue       exchange=blue_queue(direct) key=blue_queue</strong>
+                .&gt; <strong>green_queue      exchange=green_queue(direct) key=green_queue</strong>
+                .&gt; <strong>red_queue        exchange=red_queue(direct) key=red_queue</strong>
+&nbsp;
+[2018-12-11 20:43:57,707: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2018-12-11 20:43:57,716: INFO/MainProcess] mingle: searching for neighbors
+[2018-12-11 20:43:58,733: INFO/MainProcess] mingle: all alone
+[2018-12-11 20:43:58,748: INFO/MainProcess] celery@colorful ready.
+</pre>
+
+<p>Ze zvýrazněných řádků je patrné, že worker bude skutečně používat všechny
+tři specifikované fronty.</p>
+
+<p>Po naplánování tří úloh:</p>
+
+<pre>
+from tasks import red_task, green_task, blue_task
+&nbsp;
+red_task.apply_async(queue="red_queue")
+green_task.apply_async(queue="green_queue")
+blue_task.apply_async(queue="blue_queue")
+</pre>
+
+<p>Se všechny tři úlohy skutečně zpracují jediným workerem:</p>
+
+<pre>
+[2018-12-11 20:44:50,233: INFO/MainProcess] Received task: tasks.red_task[36e26c26-20a0-4c0c-9f3f-a30ad1af52fa]  
+[2018-12-11 20:44:50,235: INFO/MainProcess] Received task: tasks.green_task[99eca780-4b78-4bc0-a013-993a993bd0b5]  
+[2018-12-11 20:44:50,236: WARNING/ForkPoolWorker-1] Green task called @ 2018-12-11 20:44:50.236392
+[2018-12-11 20:44:50,236: WARNING/ForkPoolWorker-8] Red task called @ 2018-12-11 20:44:50.236387
+[2018-12-11 20:44:50,236: INFO/MainProcess] Received task: tasks.blue_task[85809695-ffa0-42a8-b863-6c85e4555857]  
+[2018-12-11 20:44:50,239: WARNING/ForkPoolWorker-3] Blue task called @ 2018-12-11 20:44:50.239053
+[2018-12-11 20:44:52,239: WARNING/ForkPoolWorker-8] Red task done
+[2018-12-11 20:44:52,239: WARNING/ForkPoolWorker-1] Green task done
+[2018-12-11 20:44:52,241: WARNING/ForkPoolWorker-3] Blue task done
+[2018-12-11 20:44:52,244: INFO/ForkPoolWorker-1] Task tasks.green_task[99eca780-4b78-4bc0-a013-993a993bd0b5] succeeded in 2.0082848705351353s: None
+[2018-12-11 20:44:52,244: INFO/ForkPoolWorker-8] Task tasks.red_task[36e26c26-20a0-4c0c-9f3f-a30ad1af52fa] succeeded in 2.008291855454445s: None
+[2018-12-11 20:44:52,245: INFO/ForkPoolWorker-3] Task tasks.blue_task[85809695-ffa0-42a8-b863-6c85e4555857] succeeded in 2.0061764754354954s: None
+</pre>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Sledování tří front zpracovávaných jediným workerem</h2>
+
+<p>Opět si &ndash; jen pro úplnost &ndash; ukažme, jakým způsobem se informace
+o workeru navázaného na tři fronty zobrazí v&nbsp;nástroji <i>Flower</i>:</p>
+
+<a href="https://www.root.cz/obrazek/348258/"><img src="https://i.iinfo.cz/images/158/celery2c-1-prev.png" class="image-348258" alt="&#160;" width="365" height="270" /></a>
+<p><i>Obrázek 18: Worker nazvaný colorful v&nbsp;nástroji Flower.</i></p>
+
+<a href="https://www.root.cz/obrazek/348259/"><img src="https://i.iinfo.cz/images/158/celery2c-2-prev.png" class="image-348259" alt="&#160;" width="367" height="270" /></a>
+<p><i>Obrázek 19: Všechny tři fronty, které jsou k&nbsp;dispozici.</i></p>
+
+<a href="https://www.root.cz/obrazek/348260/"><img src="https://i.iinfo.cz/images/158/celery2c-3-prev.png" class="image-348260" alt="&#160;" width="366" height="270" /></a>
+<p><i>Obrázek 20: Na pravém dolním grafu je patrné, že se mi nakonec nepodařilo
+sladit názvy front s&nbsp;barvami zvolenými nástrojem Flower.</i></p>
+
+<a href="https://www.root.cz/obrazek/348261/"><img src="https://i.iinfo.cz/images/158/celery2c-4-prev.png" class="image-348261" alt="&#160;" width="365" height="270" /></a></p>
+<p><i>Obrázek 21: Zde je patrné, že worker skutečně přijímá všechny
+úlohy.</i></p>
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu byly uloženy do Git repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce. Každý příklad se skládá
+minimálně ze dvou skriptů &ndash; implementace workera a skriptu pro uložení
+nové úlohy do fronty:</p>
+
+<table>
+<tr><th>Příklad</th><th>Skript</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>6</td><td>tasks.py</td><td>implementace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/tasks.py</a></td></tr>
+<tr><td>6</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_work.py</a></td></tr>
+<tr><td>6</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/enqueue_more_work.py</a></td></tr>
+<tr><td>6</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example06/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>7</td><td>tasks.py</td><td>implementace periodické úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/tasks.py</a></td></tr>
+<tr><td>7</td><td>enqueue_work.py</td><td>naplánování úlohy</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/enqueue_work.py</a></td></tr>
+<tr><td>7</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/enqueue_more_work.py</a></td></tr>
+<tr><td>7</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example07/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>8</td><td>tasks.py</td><td>implementace tří úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/tasks.py</a></td></tr>
+<tr><td>8</td><td>enqueue_work.py</td><td>naplánování úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/enqueue_work.py</a></td></tr>
+<tr><td>8</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/enqueue_more_work.py</a></td></tr>
+<tr><td>8</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example08/celeryconfig.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>9</td><td>tasks.py</td><td>implementace tří úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/tasks.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/tasks.py</a></td></tr>
+<tr><td>9</td><td>enqueue_work.py</td><td>naplánování úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/enqueue_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/enqueue_work.py</a></td></tr>
+<tr><td>9</td><td>enqueue_more_work.py</td><td>naplánování více úloh</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/enqueue_more_work.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/enqueue_more_work.py</a></td></tr>
+<tr><td>9</td><td>celeryconfig.py</td><td>konfigurace workera</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/celeryconfig.py">https://github.com/tisnik/message-queues-examples/blob/master/celery/example09/celeryconfig.py</a></td></tr>
+</table>
+
+
+
+<p><a name="k20"></a></p>
+<h2 id="k20">20. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>celery na PyPi<br />
+<a href="https://pypi.org/project/celery/">https://pypi.org/project/celery/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí<br />
+<a href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Python Celery &amp; RabbitMQ Tutorial<br />
+<a href="https://tests4geeks.com/python-celery-rabbitmq-tutorial/">https://tests4geeks.com/python-celery-rabbitmq-tutorial/</a>
+</li>
+
+<li>Flower: Real-time Celery web-monitor<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor">http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor</a>
+</li>
+
+<li>Asynchronous Tasks With Django and Celery<br />
+<a href="https://realpython.com/asynchronous-tasks-with-django-and-celery/">https://realpython.com/asynchronous-tasks-with-django-and-celery/</a>
+</li>
+
+<li>First Steps with Celery<br />
+<a href="http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html">http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html</a>
+</li>
+
+<li>node-celery<br />
+<a href="https://github.com/mher/node-celery">https://github.com/mher/node-celery</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+<li>Running multiple workers using Celery<br />
+<a href="https://serverfault.com/questions/655387/running-multiple-workers-using-celery">https://serverfault.com/questions/655387/running-multiple-workers-using-celery</a>
+</li>
+
+<li>celery — Distributed processing<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.html">http://docs.celeryproject.org/en/latest/reference/celery.html</a>
+</li>
+
+<li>Chains<br />
+<a href="https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains">https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains</a>
+</li>
+
+<li>Routing<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing">http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing</a>
+</li>
+
+<li>Celery Distributed Task Queue in Go<br />
+<a href="https://github.com/gocelery/gocelery/">https://github.com/gocelery/gocelery/</a>
+</li>
+
+<li>Python Decorators<br />
+<a href="https://wiki.python.org/moin/PythonDecorators">https://wiki.python.org/moin/PythonDecorators</a>
+</li>
+
+<li>Periodic Tasks<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html">http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html</a>
+</li>
+
+<li>celery.schedules<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab">http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2018</small></p>
+</body>
+</html>
+
