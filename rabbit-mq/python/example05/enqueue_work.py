@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-import pika
+from rabbitmq_connect import connect
 
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
 connection, channel = connect()
 
 channel.basic_publish(exchange='',
