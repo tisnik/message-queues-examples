@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from rabbitmq_connect import connect, open_channel
 
-connection = connect()
-channel = open_channel(connection)
-
 
 def run_producer(queue_name):
+    connection = connect()
+    channel = open_channel(connection)
+
     for i in range(1, 11):
         channel.basic_publish(exchange='',
                               routing_key=queue_name,
