@@ -14,7 +14,6 @@ def open_channel(connection, queue_name='test'):
 
 
 def use_fanout(channel, exchange_name='fanout_exchange'):
-    print(exchange_name)
     channel.exchange_declare(exchange=exchange_name,
                              exchange_type='fanout')
 
