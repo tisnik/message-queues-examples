@@ -14,7 +14,7 @@ def on_receive(ch, method, properties, body):
 
 def run_consumer(queue_name):
     connection = connect()
-    channel = open_channel(connection, queue_name)
+    channel = open_channel(connection, queue_name, max_priority=100)
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(on_receive,
                           queue=queue_name,
