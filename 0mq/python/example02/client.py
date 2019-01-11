@@ -7,6 +7,7 @@ def connect(port, connection_type):
     socket = context.socket(connection_type)
     address = "tcp://localhost:{port}".format(port=port)
     socket.connect(address)
+    print("Connected to {a}".format(a=address))
     return socket
 
 

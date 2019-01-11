@@ -8,6 +8,7 @@ def bind(port, connection_type):
     socket = context.socket(connection_type)
     address = "tcp://*:{port}".format(port=port)
     socket.bind(address)
+    print("Bound to address {a}".format(a=address))
     return socket
 
 
