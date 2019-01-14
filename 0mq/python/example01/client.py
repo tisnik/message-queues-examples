@@ -12,6 +12,7 @@ def connect(port, connection_type):
 
 
 def start_client():
+    """Spuštění klienta."""
     socket = connect(5556, zmq.PAIR)
     print("Waiting for messages...")
     while True:

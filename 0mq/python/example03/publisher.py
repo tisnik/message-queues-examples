@@ -18,12 +18,12 @@ def send_message(socket, message):
     socket.send_string(message)
 
 
-def start_server():
-    """Spuštění serveru."""
+def start_publisher():
+    """Spuštění publisheru."""
     socket = bind(5556, zmq.PUB)
     for i in range(10):
         send_message(socket, "Message #{i}".format(i=i))
         time.sleep(1)
 
 
-start_server()
+start_publisher()

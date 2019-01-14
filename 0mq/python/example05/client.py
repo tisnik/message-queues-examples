@@ -18,6 +18,7 @@ def send_request(socket, request):
 
 
 def start_client():
+    """Spuštění klienta."""
     socket = connect(5556, zmq.REQ)
 
     send_request(socket, "1")

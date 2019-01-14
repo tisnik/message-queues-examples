@@ -11,7 +11,8 @@ def connect(port, connection_type):
     return socket
 
 
-def start_client():
+def start_subscriber():
+    """Spuštění příjemce."""
     socket = connect(5556, zmq.SUB)
     socket.setsockopt_string(zmq.SUBSCRIBE, "")
     print("Waiting for messages...")
@@ -20,4 +21,4 @@ def start_client():
         print("Received message '{m}'".format(m=message))
 
 
-start_client()
+start_subscriber()
