@@ -4,11 +4,14 @@
 #include <zmq.h>
 
 #define BUFFER_LENGTH 32
+#define BUFFER2_LENGTH (32 + sizeof("Acknowledge: "))
 
 int main()
 {
     char buffer[BUFFER_LENGTH];
-    char *address = "tcp://localhost:5556";
+    char buffer2[BUFFER2_LENGTH];
+
+    char *address = "tcp://*:5556";
     int rc;
 
     void *context = zmq_ctx_new();
@@ -26,26 +29,36 @@ int main()
         return -1;
     }
 
-    rc = zmq_connect(socket, address);
-
+    rc = zmq_bind(socket, address);
     if (rc != 0) {
-        perror("cannot connect()");
+        perror("cannot bind()");
         zmq_close(socket);
         zmq_ctx_destroy(context);
         return -1;
     }
-    printf("Connected to address %s\n", address);
+    printf("Bound to address %s\n", address);
 
-    while (1)
+    int i;
+    for (i=0; i<10; i++)
     {
-        int num = zmq_recv(socket, buffer, BUFFER_LENGTH-1, 0);
+        snprintf(buffer, BUFFER_LENGTH, "Message #%d", i+1);
+        printf("Sending message '%s'\n", buffer);
+        rc = zmq_send(socket, buffer, strlen(buffer), 0);
+        if (rc < 0) {
+            perror("zmq_send() failed");
+        }
+
+        printf("Sent, waiting for response...\n");
+        int num = zmq_recv(socket, buffer2, BUFFER2_LENGTH-1, 0);
         if (num < 0) {
             perror("zmq_recv() failed");
         }
         else {
-            buffer[num] = '\0';
-            printf("Received '%s'\n", buffer);
+            buffer2[num] = '\0';
+            printf("Received response '%s'\n", buffer2);
         }
+
+        sleep(1);
     }
 
     rc = zmq_close(socket);

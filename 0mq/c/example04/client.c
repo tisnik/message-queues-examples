@@ -4,10 +4,12 @@
 #include <zmq.h>
 
 #define BUFFER_LENGTH 32
+#define BUFFER2_LENGTH (32 + sizeof("Acknowledge: "))
 
 int main()
 {
     char buffer[BUFFER_LENGTH];
+    char buffer2[BUFFER_LENGTH];
     char *address = "tcp://localhost:5556";
     int rc;
 
@@ -45,6 +47,12 @@ int main()
         else {
             buffer[num] = '\0';
             printf("Received '%s'\n", buffer);
+
+            snprintf(buffer2, BUFFER2_LENGTH, "Acknowledge: %s", buffer);
+            num = zmq_send(socket, buffer2, strlen(buffer2), 0);
+            if (num < 0) {
+                perror("zmq_send() failed");
+            }
         }
     }
 
