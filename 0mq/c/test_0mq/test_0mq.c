@@ -3,8 +3,15 @@
 
 int main()
 {
-    void *context = zmq_ctx_new();
-    void *socket = zmq_socket(context, ZMQ_PAIR);
+    int major, minor, patch;
+    void *context;
+    void *socket;
+
+    zmq_version (&major, &minor, &patch);
+    printf("ØMQ version %d.%d.%d\n", major, minor, patch);
+
+    context = zmq_ctx_new();
+    socket = zmq_socket(context, ZMQ_PAIR);
 
     printf("%p\n", context);
     printf("%p\n", socket);
