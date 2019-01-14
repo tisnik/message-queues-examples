@@ -14,7 +14,7 @@ def connect(port, connection_type):
 def send_message(socket, message):
     """Poslání zprávy."""
     print("Sending message '{m}'".format(m=message))
-    socket.send(message)
+    socket.send_string(message)
 
 
 def start_client():
@@ -24,7 +24,7 @@ def start_client():
     while True:
         message = socket.recv_string()
         print(message)
-        socket.send_string("Acknowledge... " + message)
+        send_message(socket, "Acknowledge... " + message)
 
 
 start_client()
