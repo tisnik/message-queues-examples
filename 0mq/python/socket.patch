@@ -1,0 +1,18 @@
+--- socket.py	2019-01-18 17:36:03.000000000 +0100
++++ ~/.local/lib/python3.6/site-packages/zmq/sugar/socket.py	2019-01-18 18:01:56.788181903 +0100
+@@ -63,6 +63,7 @@
+             self._shadow = False
+     
+     def __del__(self):
++        print("Socket.__del__")
+         if not self._shadow:
+             self.close()
+     
+@@ -75,6 +76,7 @@
+         return self
+     
+     def __exit__(self, *args, **kwargs):
++        print("Socket.__exit__")
+         self.close()
+     
+     #-------------------------------------------------------------------------
