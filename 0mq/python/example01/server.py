@@ -1,3 +1,13 @@
+# vim: set fileencoding=utf-8
+
+# ---------------------------------------------------------------------
+#
+# Demonstrační příklady využívající knihovnu PyZMQ založenou na 0MQ.
+#
+# Příklad číslo 1: server s komunikační strategií PAIR.
+#
+# ---------------------------------------------------------------------
+
 import zmq
 import time
 
