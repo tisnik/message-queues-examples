@@ -30,7 +30,7 @@ def receive_request(socket):
 @socket(CONNECTION_TYPE)
 def start_server(port, context, socket):
     """Spuštění serveru."""
-    connect(socket, PORT)
+    connect(socket, port)
     while True:
         request = receive_request(socket)
         try:
