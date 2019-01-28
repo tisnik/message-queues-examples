@@ -21,4 +21,4 @@ def create_queue(xrep_port, xreq_port):
     zmq.device(zmq.QUEUE, frontend, backend)
 
 
-create_queue(5556, 5557)
+create_queue(XREP_PORT, XREQ_PORT)
