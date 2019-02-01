@@ -1,3 +1,13 @@
+# vim: set fileencoding=utf-8
+
+# ---------------------------------------------------------------------
+#
+# Demonstrační příklady využívající knihovnu PyZMQ založenou na 0MQ.
+#
+# Příklad číslo 5: obousměrně komunikující klient s komunikační strategií REQ-REP.
+#
+# ---------------------------------------------------------------------
+
 import zmq
 
 
