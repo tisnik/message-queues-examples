@@ -1,3 +1,14 @@
+# vim: set fileencoding=utf-8
+
+# ---------------------------------------------------------------------
+#
+# Demonstrační příklady využívající knihovnu PyZMQ založenou na 0MQ.
+#
+# Příklad číslo 4: subscriber (příjemce zpráv) používající komunikační strategii PUB-SUB.
+#                  Zde se nenastavuje vstupní filtr pro zprávy.
+#
+# ---------------------------------------------------------------------
+
 import zmq
 
 
