@@ -8,7 +8,7 @@ PUSH_PORT = 5551
 @context()
 @socket(zmq.PULL)
 @socket(zmq.PUSH)
-def create_queue(pull_port, push_port, context, frontend, backend):
+def create_streamer(pull_port, push_port, context, frontend, backend):
     """Vytvoření streameru."""
     context = zmq.Context()
 
@@ -23,4 +23,4 @@ def create_queue(pull_port, push_port, context, frontend, backend):
     zmq.device(zmq.STREAMER, frontend, backend)
 
 
-create_queue(PULL_PORT, PUSH_PORT)
+create_streamer(PULL_PORT, PUSH_PORT)
