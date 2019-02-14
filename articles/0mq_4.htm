@@ -1,0 +1,1965 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Další možností nabízené knihovnou ØMQ, implementace protokolů ØMQ v čisté Javě</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Další možností nabízené knihovnou ØMQ, implementace protokolů ØMQ v čisté Javě</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>V závěrečném článku o knihovně ØMQ si ukážeme některé další praktické způsoby použití této knihovny. Nejprve dokončíme popis využití komunikační strategie PUSH-PULL, ukážeme si zařízení PyZMQ a posléze si řekneme, jakým způsobem je možné použít knihovnu ØMQ v programovacím jazyce Java.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Další možností nabízené knihovnou ØMQ, implementace protokolů ØMQ v&nbsp;čisté Javě</a></p>
+<p><a href="#k02">2. Pipeline využívající strategii PUSH-PULL</a></p>
+<p><a href="#k03">3. Zařízení typu Streamer</a></p>
+<p><a href="#k04">4. Připojení k&nbsp;zařízení typu Streamer</a></p>
+<p><a href="#k05">5. Zařízení PyZMQ</a></p>
+<p><a href="#k06">6. Základní rozdíly mezi zařízeními 0MQ a PyZMQ</a></p>
+<p><a href="#k07">7. PyZMQ zařízení typu Queue versus ØMQ Queue</a></p>
+<p><a href="#k08">8. Úprava fronty takovým způsobem, aby se použilo zařízení PyZMQ</a></p>
+<p><a href="#k09">9. Kooperace mezi 0MQ a aplikacemi naprogramovanými v&nbsp;Javě</a></p>
+<p><a href="#k10">10. Knihovna JeroMQ</a></p>
+<p><a href="#k11">11. Komunikace typu REQ-REP: klient naprogramovaný v&nbsp;Pythonu a server v&nbsp;Javě</a></p>
+<p><a href="#k12">12. Otestování komunikace klient-server</a></p>
+<p><a href="#k13">13. Portace klienta do Javy</a></p>
+<p><a href="#k14">14. Komunikační strategie typu PUSH-PULL: přepis producenta zpráv do Javy</a></p>
+<p><a href="#k15">15. Komunikační strategie typu PUSH-PULL: přepis konzumenta zpráv do Javy</a></p>
+<p><a href="#k16">16. Rozdělení zátěže mezi větší počet konzumentů (workerů)</a></p>
+<p><a href="#k17">17. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k18">18. Odkazy na předchozí části seriálu</a></p>
+<p><a href="#k19">19. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Další možností nabízené knihovnou ØMQ, implementace protokolů ØMQ v&nbsp;čisté Javě</h2>
+
+<p>Dnešní článek o knihovně ØMQ je rozdělen na tři části. <a
+href="#k02">V&nbsp;úvodní části</a> dokončíme popis využití komunikační
+strategie typu <strong>PUSH-PULL</strong>, s&nbsp;níž jsme se již <a
+href="#k19">v&nbsp;tomto seriálu</a> několikrát setkali, ovšem prozatím jsme si
+neukázali všechny možnosti, které nám tato strategie nabízí. Na tuto část
+navážeme popisem vlastností <a href="#k05">zařízení PyZMQ</a> (<i>PyZMQ
+devices</i>), která se používají jednodušeji, než zařízení samotné knihovny ØMQ
+(<i>ØMQ devices</i>). A konečně bude <a href="#k09">závěrečná část</a> věnována
+základním způsobům použití knihovny ØMQ, přesněji řečeno její varianty nazvané
+<i>JeroMQ</i>, z&nbsp;programovacího jazyka Java. Díky závěrečné části článku
+se nám tedy podaří propojit témata tohoto seriálu a poněkud nepravidelně <a
+href="https://www.root.cz/serialy/programovaci-jazyk-java-a-jvm">vycházejících
+článků o Javě a o virtuálním stroji Javy</a>.</p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Pipeline využívající strategii PUSH-PULL</h2>
+
+<p>V&nbsp;této kapitole se na chvíli vrátíme k&nbsp;architektuře používající
+komunikační strategii <strong>PUSH-PULL</strong>.</p>
+
+<img src="https://i.iinfo.cz/images/248/zmq-2-5.png" class="image-350900" alt="&#160;" width="570" height="116" />
+<p><i>Obrázek 1: Jednosměrná komunikace využívající strategii
+<strong>PUSH-PULL</strong>.</i></p>
+
+<p>Minule jsme si ukázali, jakým způsobem je možné implementovat rozložení
+zátěže (úkolů) mezi větší množství workerů pomocí <i>fan-out</i>
+(<i>fanout</i>) a následně všechny výsledky práce workerů sloučit a
+popř.&nbsp;dále zpracovat (uložit atd.) v&nbsp;jediném uzlu
+(<i>fan-in</i>).</p>
+
+<img src="https://i.iinfo.cz/images/248/zmq-2-7.png" class="image-350902" alt="&#160;" width="644" height="415" />
+<p><i>Obrázek 2: Využití většího množství workerů pomocí fan-in a
+fan-out.</i></p>
+
+<p>Ovšem s&nbsp;využitím strategie <strong>PUSH-PULL</strong> je možné
+realizovat i &bdquo;kolonu&ldquo; (<i>pipeline</i>) složenou z&nbsp;většího
+množství workerů, kteří si navzájem posílají výsledky své práce. Pojmenování
+<i>pipeline</i> je v&nbsp;tomto případě příznačné, protože prakticky tu stejnou
+funkci nám poskytuje shell při použití rour a FIFO. Ukažme si nyní, jak je
+možné realizovat relativně jednoduchou a přímočarou pipeline, v&nbsp;níž
+existuje jeden zdroj úkolů, workery dvou typů a na konci sběratel
+(<i>collector</i>) výsledků:</p>
+
+<img src="https://i.iinfo.cz/images/510/zmq-4-1.png" class="image-352264" alt="&#160;" width="231" height="566" />
+<p><i>Obrázek 3: Jednoduchá pipeline.</i></p>
+
+<p>Ve výše zobrazeném schématu se prozatím nenachází žádné zařízení, což je
+obecně poněkud problematické, protože to znamená, že jeden z&nbsp;workerů musí
+vystupovat v&nbsp;roli serveru (a přitom víme, že workeři jsou obecně
+nestabilním prvkem celého systému, jelikož je typicky připojujeme a odpojujeme
+podle aktuální zátěže, workeři mohou být restartováni po pádu, po zjištění
+velké spotřeby paměti atd.).</p>
+
+<p>Implementace uzlu, který vytváří úkoly (<i>job</i>, <i>task</i>) pro
+jednotlivé workery a používá ve svém zdrojovém kódu dekorátory, <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/producer.py">vypadá
+následovně</a>:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+from time import sleep
+&nbsp;
+&nbsp;
+CONNECTION_TYPE = zmq.PUSH
+PORT = 5556
+&nbsp;
+&nbsp;
+def <strong>send_message</strong>(socket, message):
+    <i>"""Poslání zprávy."""</i>
+    print("Sending message '{m}'".format(m=message))
+    socket.send_string(message)
+&nbsp;
+&nbsp;
+@context()
+@socket(CONNECTION_TYPE)
+def <strong>start_producer</strong>(context, socket):
+    <i>"""Spuštění serveru."""</i>
+&nbsp;
+    address = "tcp://*:{port}".format(port=PORT)
+    # socket.set_hwm(1)
+    socket.bind(address)
+    print("Bound to address {a}".format(a=address))
+&nbsp;
+    for i in range(11):
+        send_message(socket, "Message #{i}".format(i=i))
+        sleep(0.1)
+&nbsp;
+&nbsp;
+start_producer()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker1.py">Implementace
+prvního workera</a>, který je umístěn do levé části pipeline:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+from os import getpid
+&nbsp;
+&nbsp;
+IN_PORT = 5556
+OUT_PORT = 5557
+&nbsp;
+&nbsp;
+@context()
+@socket(zmq.PULL)
+@socket(zmq.PUSH)
+def <strong>start_worker</strong>(context, in_socket, out_socket):
+    <i>"""Spuštění workera."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=IN_PORT)
+    in_socket.connect(address)
+    print("Connected to {a}".format(a=address))
+&nbsp;
+    address = "tcp://*:{port}".format(port=OUT_PORT)
+    out_socket.bind(address)
+    print("And to {a}".format(a=address))
+&nbsp;
+    print("Waiting for message from producer...")
+    pid = getpid()
+&nbsp;
+    while True:
+        message = in_socket.recv_string()
+        out_message = "Message from {pid}: '{m}'".format(pid=pid, m=message)
+        print(out_message)
+        out_socket.send_string(out_message)
+&nbsp;
+&nbsp;
+start_worker()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker2.py">Implementace
+druhého workera</a>, který je umístěn do pravé části pipeline:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+from os import getpid
+&nbsp;
+&nbsp;
+IN_PORT = 5557
+OUT_PORT = 5558
+&nbsp;
+&nbsp;
+@context()
+@socket(zmq.PULL)
+@socket(zmq.PUSH)
+def <strong>start_worker</strong>(context, in_socket, out_socket):
+    <i>"""Spuštění workera."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=IN_PORT)
+    in_socket.connect(address)
+    print("Connected to {a}".format(a=address))
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=OUT_PORT)
+    out_socket.connect(address)
+    print("And to {a}".format(a=address))
+&nbsp;
+    print("Waiting for message from worker #1...")
+    pid = getpid()
+&nbsp;
+    while True:
+        message = in_socket.recv_string()
+        out_message = "Message from {pid}: '{m}'".format(pid=pid, m=message)
+        print(out_message)
+        out_socket.send_string(out_message)
+&nbsp;
+&nbsp;
+start_worker()
+</pre>
+
+<p>A nakonec si ukažme <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/collector.py">implementaci
+sběratele výsledků</a>:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+from time import sleep
+&nbsp;
+&nbsp;
+CONNECTION_TYPE = zmq.PULL
+PORT = 5558
+&nbsp;
+&nbsp;
+@context()
+@socket(CONNECTION_TYPE)
+def <strong>start_collector</strong>(context, socket):
+    <i>"""Spuštění sběratele."""</i>
+&nbsp;
+    address = "tcp://*:{port}".format(port=PORT)
+    socket.bind(address)
+    print("Connected to {a}".format(a=address))
+&nbsp;
+    print("Waiting for message from worker #2 ...")
+    while True:
+        message = socket.recv_string()
+        print("Collecting message: '{m}'".format(m=message))
+        sleep(0)
+&nbsp;
+&nbsp;
+start_collector()
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si, že se používají tři
+porty:</div></p>
+
+<ol>
+<li>5556: od producenta k&nbsp;prvnímu workeru</li>
+<li>5557: od prvního workera ke druhému workeru</li>
+<li>5558: od druhého workera k&nbsp;procesu, který výsledky zpracuje</li>
+</ol>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Zařízení typu Streamer</h2>
+
+<p>Posledním typem zařízení, s&nbsp;nímž se v&nbsp;dnešním článku seznámíme, je
+zařízení nazvané <strong>ZMQ.STREAMER</strong>. Toto zařízení se používá ve
+chvíli, kdy spolu jednotlivé uzly komunikují s&nbsp;využitím strategie
+<strong>PUSH-PULL</strong>. <i>Streamer</i> se do celého procesu zpracování
+přidává jednoduše, protože se na přední straně (frontend) chová jako běžný
+příjemze zpráv (PULL) a na zadní straně (backend) jako jejich zdroj. Na rozdíl
+od zařízení <i>Queue</i> tedy nebylo nutné přidat nové typy socketů typu XREP a
+XREQ:</p>
+
+<a href="https://www.root.cz/obrazek/352265/"><img src="https://i.iinfo.cz/images/510/zmq-4-2-prev.png" class="image-352265" alt="&#160;" width="370" height="93" /></a>
+<p><i>Obrázek 4: Použití zařízení typu Streamer.</i></p>
+
+<p>Opět si ukažme princip použití tohoto zařízení. Nejprve vytvoříme skripty se
+zdrojem zpráv a s&nbsp;jejich cílovým zpracováním. V&nbsp;obou skriptech se
+bude používat metoda <strong>Socket.connect</strong>, nikoli
+<strong>Socket.bind</strong>. Navíc se budou používat odlišná čísla portů,
+protože mezi producentem a konzumentem bude umístěno právě zařízení typu
+<i>Streamer</i>.</p>
+
+<p>Implementace <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/producer.py">producenta
+zpráv</a>:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+import time
+&nbsp;
+&nbsp;
+CONNECTION_TYPE = zmq.PUSH
+PORT = 5550
+&nbsp;
+&nbsp;
+def <strong>send_message</strong>(socket, message):
+    <i>"""Poslání zprávy."""</i>
+    print("Sending message '{m}'".format(m=message))
+    socket.send_string(message)
+&nbsp;
+&nbsp;
+@context()
+@socket(CONNECTION_TYPE)
+def <strong>start_producer</strong>(port, context, socket):
+    <i>"""Spuštění serveru."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=port)
+    # socket.set_hwm(1)
+    socket.connect(address)
+    print("Connected to address {a}".format(a=address))
+&nbsp;
+    for i in range(100):
+        send_message(socket, "Message #{i}".format(i=i))
+        time.sleep(0.2)
+&nbsp;
+&nbsp;
+start_producer(PORT)
+</pre>
+
+<p>Implementace <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/consumer.py">konzumenta
+zpráv</a>:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+import time
+&nbsp;
+&nbsp;
+CONNECTION_TYPE = zmq.PULL
+PORT = 5551
+&nbsp;
+&nbsp;
+@context()
+@socket(CONNECTION_TYPE)
+def <strong>start_consumer</strong>(port, context, socket):
+    <i>"""Spuštění konzumenta."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+&nbsp;
+    print("Waiting for message...")
+    cnt = 0
+    while True:
+        message = socket.recv_string()
+        cnt += 1
+        print("Received message {c} of 100: '{m}'".format(c=cnt, m=message))
+        time.sleep(0)
+&nbsp;
+&nbsp;
+start_consumer(PORT)
+</pre>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Připojení k&nbsp;zařízení typu Streamer</h2>
+
+<p>Vlastní implementace streameru je vlastně velmi jednoduchá a prakticky se
+neliší například od implementace zařízení typu Queue. Ostatně se můžeme podívat
+na <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/streamer.py">zdrojový
+kód skriptu</a> s&nbsp;implementací, v&nbsp;němž se na portu 5550 navazuje
+připojení typu PULL a na portu 5551 připojení typu PUSH, tj.&nbsp;přesně tak,
+jak to bylo naznačeno na čtvrtém obrázku. Na obou stranách se používá metoda
+<strong>Socket.bind</strong>, protože streamer bude ústředním a stabilním
+prvkem celé architektury:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+&nbsp;
+PULL_PORT = 5550
+PUSH_PORT = 5551
+&nbsp;
+&nbsp;
+@context()
+@socket(zmq.PULL)
+@socket(zmq.PUSH)
+def <strong>create_streamer</strong>(pull_port, push_port, context, frontend, backend):
+    <i>"""Vytvoření streameru."""</i>
+    context = zmq.Context()
+&nbsp;
+    address = "tcp://*:{port}".format(port=pull_port)
+    frontend.bind(address)
+    print("Bound to {a} on port {p}".format(a=address, p=pull_port))
+&nbsp;
+    address = "tcp://*:{port}".format(port=push_port)
+    backend.bind(address)
+    print("Bound to {a} on port {p}".format(a=address, p=push_port))
+&nbsp;
+    zmq.device(zmq.STREAMER, frontend, backend)
+&nbsp;
+&nbsp;
+create_streamer(PULL_PORT, PUSH_PORT)
+</pre>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Zařízení PyZMQ</h2>
+
+<p><a
+href="https://www.root.cz/clanky/vyuziti-zarizeni-v-knihovne-mq-pri-tvorbe-systemu-se-slozitejsi-architekturou/">V&nbsp;předchozím
+článku</a> jsme se mj.&nbsp;zabývali i popisem takzvaných <i>zařízení ØMQ</i>.
+Připomeňme si, že samotná knihovna ØMQ nabízí vývojářům následující zařízení,
+která se většinou používají při návrhu systémů se složitější architekturou a
+s&nbsp;požadavkem na jejich větší robustnost:</p>
+
+<table>
+<tr><th>Zařízení</th><th>Stručný popis</th></tr>
+<tr><td>ZMQ.QUEUE</td><td>prostředník používaný především v&nbsp;komunikaci <strong>REQ-REP</strong> (klasický klient, server)</td></tr>
+<tr><td>ZMQ.FORWARDER</td><td>používá se jako prostředník mezi zdroji zpráv a jejich příjemci <strong>PUB-SUB</strong></td></tr>
+<tr><td>ZMQ.STREAMER</td><td>používá se v&nbsp;komunikační strategii <strong>PUSH-PULL</strong></td></tr>
+</table>
+
+<p>Knihovna PyZMQ, která slouží jako rozhraní mezi nativní knihovnou ØMQ a
+programovacím jazykem Python, programátorům nabízí ještě jednu možnost &ndash;
+takzvaná zařízení PyZMQ (<i>PyZMQ devices</i>). Jejich základní význam je
+stejný, jako u zařízení ØMQ, ovšem zatímco u zařízení ØMQ jsme museli
+explicitně otevírat (popř.&nbsp;i zavírat) sockety, u zařízení PyZMQ se pracuje
+pouze s&nbsp;typy socketů. Všechny operace typu vytvoření socketu, vytvoření
+zařízení ØMQ atd., knihovna PyZMQ udělá za vývojáře sama, takže výsledný
+zdrojový kód je mnohem jednodušší a taktéž idiomatičtější (navíc se
+v&nbsp;naprosté většině případů vyhneme i použití dekorátorů, dokonce ani není
+nutné explicitně vytvářet instanci kontextu ØMQ).</p>
+
+<p>Navíc je kód reprezentující zařízení spuštěn v&nbsp;samostatném (automaticky
+vytvořeném) vláknu, což znamená, že budeme moci velmi snadno v&nbsp;jednom
+skriptu implementovat jak příslušné zařízení, tak například i server či
+producenta. Z&nbsp;dalších pohledů však zařízení PyZMQ svými vlastnostmi plně
+odpovídají zařízením ØMQ:</p>
+
+<table>
+<tr><th>Zařízení ØMQ</th><th>Zařízení PyZMQ</th></tr>
+<tr><td>zmq.device(zmq.QUEUE, socket, socket)</td><td>ProcessDevice(zmq.QUEUE, typ_socketu, typ_socketu)</td></tr>
+<tr><td>zmq.device(zmq.FORWARDER, socket, socket)</td><td>ProcessDevice(zmq.FORWARDER, typ_socketu, typ_socketu)</td></tr>
+<tr><td>zmq.device(zmq.STREAMER, socket, socket)</td><td>ProcessDevice(zmq.STREAMER, typ_socketu, typ_socketu)</td></tr>
+</table>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Základní rozdíly mezi zařízeními 0MQ a PyZMQ</h2>
+
+<p>Podívejme se nyní na praktické rozdíly mezi zařízeními knihovny ØMQ a
+zařízeními rozhraní PyZMQ z&nbsp;pohledu běžného vývojáře.</p>
+
+<p>Nejdříve si připomeňme, jakým způsobem jsme použili zařízení
+<strong>Streamer</strong>, které se používá při komunikaci typu
+<strong>PUSH-PULL</strong>. Toto zařízení bude vloženo mezi producenta zpráv a
+mezi jejich konzumenta.</p>
+
+<p>Samotnou implementaci meziuzlu reprezentovaného zařízením
+<strong>Streamer</strong> můžeme přepsat s&nbsp;využitím zařízení PyZMQ.
+Nejprve musíme importovat třídu <strong>ProcessDevice</strong> z&nbsp;modulu
+<strong>zmq.devices.basedevice</strong>:</p>
+
+<pre>
+from zmq.devices.basedevice import ProcessDevice
+</pre>
+
+<p>Dále zkonstruujeme instanci třídy <strong>ProcessDevice</strong>, přičemž
+budeme muset specifikovat jak typ zařízení (<strong>Streamer</strong>), tak i
+typ socketu na frontendu i na backendu (skutečně se specifikují pouze typy
+socketů, nikoli samotné sockety &ndash; ty nemusíme explicitně vytvářet):</p>
+
+<pre>
+streamer_device = ProcessDevice(zmq.STREAMER, zmq.PULL, zmq.PUSH)
+</pre>
+
+<p>Jakmile je zařízení vytvořeno, musíme nastavit adresy, na nichž zařízení
+typu <strong>Streamer</strong> naslouchá. K&nbsp;tomu se používají metody
+nazvané <strong>bind_in</strong> a <strong>bind_out</strong>:</p>
+
+<pre>
+frontend_address = "tcp://*:{port}".format(port=pull_port)
+backend_address = "tcp://*:{port}".format(port=push_port)
+&nbsp;
+streamer_device.<strong>bind_in</strong>(frontend_address)
+streamer_device.<strong>bind_out</strong>(backend_address)
+</pre>
+
+<p>Nakonec pouze zařízení spustíme, takže se interně v&nbsp;novém vláknu (tedy
+z&nbsp;našeho pohledu na pozadí) spustí nekonečná smyčka zpracovávající zprávy
+přicházející na frontend a posílající zprávy na backend:</p>
+
+<pre>
+streamer_device.start()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/streamer.py">Úplný
+zdrojový kód</a> meziuzlu se zařízením typu <strong>Streamer</strong> a
+současně i s&nbsp;producentem zpráv vypadá takto:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+from zmq.devices.basedevice import ProcessDevice
+import time
+&nbsp;
+PULL_PORT = 5550
+PUSH_PORT = 5551
+&nbsp;
+PRODUCER_CONNECTION_TYPE = zmq.PUSH
+PRODUCER_PORT = 5550
+&nbsp;
+&nbsp;
+def <strong>create_streamer</strong>(pull_port, push_port):
+    <i>"""Vytvoření streameru."""</i>
+    streamer_device = ProcessDevice(zmq.STREAMER, zmq.PULL, zmq.PUSH)
+&nbsp;
+    frontend_address = "tcp://*:{port}".format(port=pull_port)
+    backend_address = "tcp://*:{port}".format(port=push_port)
+&nbsp;
+    streamer_device.bind_in(frontend_address)
+    streamer_device.bind_out(backend_address)
+&nbsp;
+    print("Bound to {a} on port {p}".format(a=frontend_address, p=pull_port))
+    print("Bound to {a} on port {p}".format(a=backend_address, p=push_port))
+&nbsp;
+    streamer_device.start()
+    print("Device started in background")
+&nbsp;
+&nbsp;
+def <strong>send_message</strong>(socket, message):
+    <i>"""Poslání zprávy."""</i>
+    print("Sending message '{m}'".format(m=message))
+    socket.send_string(message)
+&nbsp;
+&nbsp;
+@socket(PRODUCER_CONNECTION_TYPE)
+def <strong>start_producer</strong>(port, context, socket):
+    <i>"""Spuštění zdroje zprav."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=port)
+    # socket.set_hwm(1)
+    socket.connect(address)
+    print("Connected to address {a}".format(a=address))
+&nbsp;
+    for i in range(100):
+        send_message(socket, "Message #{i}".format(i=i))
+        time.sleep(0.2)
+&nbsp;
+&nbsp;
+@context()
+def <strong>start_device_and_producer</strong>(context):
+    create_streamer(PULL_PORT, PUSH_PORT)
+    start_producer(PRODUCER_PORT, context)
+&nbsp;
+&nbsp;
+start_device_and_producer()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/consumer.py">Kód
+konzumenta</a> se žádným způsobem nezmění, takže jen pro úplnost:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context, socket
+import time
+&nbsp;
+&nbsp;
+CONNECTION_TYPE = zmq.PULL
+PORT = 5551
+&nbsp;
+&nbsp;
+@context()
+@socket(CONNECTION_TYPE)
+def <strong>start_consumer</strong>(port, context, socket):
+    <i>"""Spuštění konzumenta."""</i>
+&nbsp;
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+&nbsp;
+    print("Waiting for message...")
+    cnt = 0
+    while True:
+        message = socket.recv_string()
+        cnt += 1
+        print("Received message {c} of 100: '{m}'".format(c=cnt, m=message))
+        time.sleep(0)
+&nbsp;
+&nbsp;
+start_consumer(PORT)
+</pre>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. PyZMQ zařízení typu Queue versus ØMQ Queue</h2>
+
+<p>Druhým typem zařízení rozhraní PyZMQ, s&nbsp;nímž se dnes seznámíme, je
+zařízení typu <strong>Queue</strong>, které se využívá především
+v&nbsp;komunikační strategii <strong>REP-REQ</strong>, s&nbsp;níž jsme se již
+taktéž setkali. Opět si nejdříve ukažme implementaci jednoduchého serveru a
+klienta, mezi něž je vložena fronta vytvořená klasicky pomocí funkcí 0MQ:</p>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example16_queue_device/server.py">Server</a>
+vypadal takto:</p>
+
+<pre>
+import zmq
+from math import factorial
+&nbsp;
+PORT = 5557
+&nbsp;
+&nbsp;
+def <strong>connect</strong>(port, connection_type):
+    <i>"""Otevření socketu se specifikovaným typem spojení."""</i>
+    context = zmq.Context()
+    socket = context.socket(connection_type)
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+    return socket
+&nbsp;
+&nbsp;
+def <strong>send_response</strong>(socket, response):
+    <i>"""Odeslání odpovědi."""</i>
+    print("Sending response '{r}'".format(r=response))
+    socket.send_string(response)
+&nbsp;
+&nbsp;
+def <strong>receive_request</strong>(socket):
+    <i>"""Zpracování požadavku klienta."""</i>
+    request = socket.recv_string()
+    print("Received request from client: '{r}'".format(r=request))
+    return request
+&nbsp;
+&nbsp;
+def <strong>start_server</strong>():
+    <i>"""Spuštění serveru."""</i>
+    socket = connect(PORT, zmq.REP)
+    while True:
+        request = receive_request(socket)
+        try:
+            n = int(request)
+            fact = factorial(n)
+            send_response(socket, "{n}! = {f}".format(n=n, f=fact))
+        except Exception as e:
+            send_response(socket, "Wrong input")
+&nbsp;
+&nbsp;
+start_server()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example16_queue_device/client.py">Zdrojový
+kód klienta</a>:</p>
+
+<pre>
+import zmq
+&nbsp;
+PORT = 5556
+&nbsp;
+&nbsp;
+def <strong>connect</strong>(port, connection_type):
+    <i>"""Otevření socketu se specifikovaným typem spojení."""</i>
+    context = zmq.Context()
+    socket = context.socket(connection_type)
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+    return socket
+&nbsp;
+&nbsp;
+def <strong>send_request</strong>(socket, request):
+    <i>"""Poslání požadavku."""</i>
+    print("Sending request '{r}'".format(r=request))
+    socket.send_string(request)
+&nbsp;
+&nbsp;
+def <strong>start_client</strong>():
+    <i>"""Spuštění klienta."""</i>
+    socket = connect(PORT, zmq.REQ)
+&nbsp;
+    send_request(socket, "1")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "10")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "xyzzy")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "-10")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "100")
+    print(socket.recv_string())
+    print()
+&nbsp;
+&nbsp;
+start_client()
+</pre>
+
+<p>A konečně <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example16_queue_device/queue.py">vlastní
+zařízení typu <strong>Queue</strong></a>:</p>
+
+<pre>
+import zmq
+&nbsp;
+XREP_PORT = 5556
+XREQ_PORT = 5557
+&nbsp;
+&nbsp;
+def <strong>create_queue</strong>(xrep_port, xreq_port):
+    <i>"""Vytvoření fronty."""</i>
+    context = zmq.Context()
+&nbsp;
+    frontend = context.socket(zmq.XREP)
+    address = "tcp://*:{port}".format(port=xrep_port)
+    frontend.bind(address)
+    print("Bound to {a} on port {p}".format(a=address, p=xrep_port))
+&nbsp;
+    backend = context.socket(zmq.XREQ)
+    address = "tcp://*:{port}".format(port=xreq_port)
+    backend.bind(address)
+    print("Bound to {a} on port {p}".format(a=address, p=xreq_port))
+&nbsp;
+    zmq.device(zmq.QUEUE, frontend, backend)
+&nbsp;
+&nbsp;
+create_queue(XREP_PORT, XREQ_PORT)
+</pre>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. Úprava fronty takovým způsobem, aby se použilo zařízení PyZMQ</h2>
+
+<p>Úprava při použití zařízení PyZMQ bude spočívat se sloučení kódu klienta a
+fronty <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example25_queue_device/server.py">do
+následujícího skriptu</a>:</p>
+
+<pre>
+import zmq
+from zmq.decorators import context
+from zmq.devices.basedevice import ProcessDevice
+from math import factorial
+&nbsp;
+XREP_PORT = 5556
+XREQ_PORT = 5557
+&nbsp;
+SERVER_PORT = 5557
+&nbsp;
+&nbsp;
+def <strong>create_queue</strong>(xrep_port, xreq_port):
+    <i>"""Vytvoření fronty."""</i>
+    queue_device = ProcessDevice(zmq.QUEUE, zmq.XREP, zmq.XREQ)
+&nbsp;
+    frontend_address = "tcp://*:{port}".format(port=xrep_port)
+    backend_address = "tcp://*:{port}".format(port=xreq_port)
+&nbsp;
+    queue_device.bind_in(frontend_address)
+    queue_device.bind_out(backend_address)
+&nbsp;
+    print("Bound to {a} on port {p}".format(a=frontend_address, p=xrep_port))
+    print("Bound to {a} on port {p}".format(a=backend_address, p=xreq_port))
+&nbsp;
+    queue_device.start()
+    print("Queue device started in background")
+&nbsp;
+&nbsp;
+def <strong>connect</strong>(context, port, connection_type):
+    <i>"""Otevření socketu se specifikovaným typem spojení."""</i>
+    socket = context.socket(connection_type)
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+    return socket
+&nbsp;
+&nbsp;
+def <strong>send_response</strong>(socket, response):
+    <i>"""Odeslání odpovědi."""</i>
+    print("Sending response '{r}'".format(r=response))
+    socket.send_string(response)
+&nbsp;
+&nbsp;
+def <strong>receive_request</strong>(socket):
+    <i>"""Zpracování požadavku klienta."""</i>
+    request = socket.recv_string()
+    print("Received request from client: '{r}'".format(r=request))
+    return request
+&nbsp;
+&nbsp;
+def <strong>start_server</strong>(context, port):
+    <i>"""Spuštění serveru."""</i>
+    socket = connect(context, port, zmq.REP)
+    while True:
+        request = receive_request(socket)
+        try:
+            n = int(request)
+            fact = factorial(n)
+            send_response(socket, "{n}! = {f}".format(n=n, f=fact))
+        except Exception as e:
+            send_response(socket, "Wrong input")
+&nbsp;
+&nbsp;
+@context()
+def <strong>start_device_and_server</strong>(context):
+    create_queue(XREP_PORT, XREQ_PORT)
+    start_server(context, SERVER_PORT)
+&nbsp;
+&nbsp;
+start_device_and_server()
+</pre>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Kooperace mezi 0MQ a aplikacemi naprogramovanými v&nbsp;Javě</h2>
+
+<p>V&nbsp;závěrečné části dnešního článku si ukážeme, jakým způsobem je možné
+ØMQ využít v&nbsp;Javě a (nepřímo) i v&nbsp;dalších programovacích jazycích,
+které jsou postaveny nad virtuálním strojem Javy (Groovy, Scale, Clojure,
+pravděpodobně i dnes již poněkud obstarožní Jython atd.). Připomeňme si, že ØMQ
+je naprogramována v&nbsp;jazyce C++ a existuje pro ni nativní rozhraní jak pro
+C, tak i pro C++. Díky tomu je relativně přímočaré použít rozhraní <a
+href="https://www.root.cz/clanky/pohled-pod-kapotu-jvm-prednosti-a-zapory-vyuziti-jni-pri-optimalizacich/">JNI</a>
+(<i>Java Native Interface</i>) pro volání nativního kódu z&nbsp;Javy. Tento
+přístup je použit v&nbsp;knihovně <i>JZMQ</i>, jejíž zdrojové kódy naleznete
+v&nbsp;GitHub repositáři <a
+href="https://github.com/zeromq/jzmq">https://github.com/zeromq/jzmq</a>.
+Předností tohoto způsobu je automaticky zaručená kompatibilita s&nbsp;ostatními
+aplikacemi a nástroji, které ØMQ používají. Nevýhodou pak především složitější
+překlad a instalace <i>JZMQ</i> (ostatně většinou se při kombinaci nativních
+knihoven a JVM dostaneme do podobné situace).</p>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Knihovna JeroMQ</h2>
+
+<p>Pokud vám z&nbsp;nějakého důvodu knihovna <i>JZMQ</i> nebude vyhovovat,
+například při požadavku na to, že se může nasazovat jen bajtkód JVM, můžete
+využít alternativní knihovnu nazvanou <i>JeroMQ</i>. Tato knihovna, jejíž
+repositář je umístěn na adrese <a
+href="https://github.com/zeromq/jeromq">https://github.com/zeromq/jeromq</a>,
+reimplementuje celou infrastrukturu ØMQ, ovšem na rozdíl od jazyka C++ je
+použita Java. Tím se podařilo obejít JNI, zjednodušit celý proces překladu a
+instalace knihovny atd. Možná poněkud paradoxní je, že výsledek nemusí být
+pomalejší, než nativní varianta ØMQ, a to z&nbsp;toho důvodu, že JNI je samo o
+sobě dosti problematické a pomalé, takže záleží především na tom, jak často se
+nativní funkce volají a jak velké datové struktury se jim předávají. Viz též
+několik porovnání dostupných na wiki <a
+href="https://github.com/zeromq/jeromq/wiki/Performance">https://github.com/zeromq/jeromq/wiki/Performance</a>.</p>
+
+<p>Knihovnu JeroMQ můžeme buď přidat do svého <i>pom.xml</i> (pokud používáte
+Maven popř.&nbsp;systém postavený na Mavenu), popř.&nbsp;si pro pouhé
+otestování můžete stáhnout již připravený java archiv s&nbsp;přeloženou
+knihovnou:</p>
+
+<pre>
+wget https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/jeromq-0.4.4-20180323.141003-1.jar
+</pre>
+
+<p>Tento druhý způsob využijeme v&nbsp;dalších příkladech.</p>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Komunikace typu REQ-REP: klient naprogramovaný v&nbsp;Pythonu a server v&nbsp;Javě</h2>
+
+<p>Ukažme si nyní, jak je možné komunikovat mezi klientem naprogramovaným
+v&nbsp;Pythonu a používajícím nativní ØMQ na jedné straně, se serverem
+naprogramovaným v&nbsp;Javě a používajícím JeroMQ na straně druhé. Využijeme
+základní komunikační strategii REQ-REP, s&nbsp;níž jsme již dobře
+seznámeni.</p>
+
+<p>Jak jsme si již řekli v&nbsp;úvodním odstavci, je <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep/client.py">klient
+vytvořen v&nbsp;Pythonu</a> a prozatím v&nbsp;něm nenajdeme žádnou novou
+funkcionalitu:</p>
+
+<pre>
+import zmq
+&nbsp;
+&nbsp;
+def <strong>connect</strong>(port, connection_type):
+    <i>"""Otevření socketu se specifikovaným typem spojení."""</i>
+    context = zmq.Context()
+    socket = context.socket(connection_type)
+    address = "tcp://localhost:{port}".format(port=port)
+    socket.connect(address)
+    print("Connected to {a}".format(a=address))
+    return socket
+&nbsp;
+&nbsp;
+def <strong>send_request</strong>(socket, request):
+    <i>"""Poslání požadavku."""</i>
+    print("Sending request '{r}'".format(r=request))
+    socket.send_string(request)
+&nbsp;
+&nbsp;
+def <strong>start_client</strong>():
+    <i>"""Spuštění klienta."""</i>
+    socket = connect(5555, zmq.REQ)
+&nbsp;
+    send_request(socket, "1")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "10")
+    print(socket.recv_string())
+    print()
+&nbsp;
+    send_request(socket, "xyzzy")
+    print(socket.recv_string())
+    print()
+&nbsp;
+&nbsp;
+start_client()
+</pre>
+
+<p>Naproti tomu pro implementaci serveru použijeme Javu. Server bude přijímat
+požadavky a pokud bude v&nbsp;požadavku předáno celé číslo (zapsané do
+řetězce), vypočte server faktoriál tohoto čísla a vrátí výsledek.
+V&nbsp;případě jakéhokoli problému se vrátí zpráva s&nbsp;informací o tom, proč
+k&nbsp;problému došlo. <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep/Server.java">Zdrojový
+kód serveru</a> může vypadat následovně:</p>
+
+<pre>
+import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+&nbsp;
+public class <strong>Server</strong>
+{
+    public static long <strong>factorial</strong>(long n)
+    {
+        int i, result=1;  
+        for(i=2; i&lt;=n; i++) {    
+            result *= i;
+        }
+        return result;
+    }
+&nbsp;
+    public static void <strong>main</strong>(String[] args) throws Exception
+    {
+        try (ZContext context = new ZContext()) {
+            ZMQ.Socket socket = context.createSocket(ZMQ.REP);
+            socket.bind("tcp://*:5555");
+&nbsp;
+            while (!Thread.currentThread().isInterrupted()) {
+                byte[] raw_request = socket.recv(0);
+                String request = new String(raw_request, ZMQ.CHARSET);
+                String response = null;
+&nbsp;
+                System.out.println("Received: " + request);
+&nbsp;
+                try {
+                    long n = Integer.parseInt(request);
+                    if (n &lt; 0) {
+                        response = "Invalid input!";
+                    } else {
+                        response = n + "! = " + Server.factorial(n);
+                    }
+                }
+                catch (Exception e) {
+                    response = "Wrong input!";
+                }
+&nbsp;
+                socket.send(response.getBytes(ZMQ.CHARSET), 0);
+            }
+        }
+    }
+}
+</pre>
+
+<p>Oproti kódu naprogramovanému v&nbsp;Pythonu je zde provedeno několik změn,
+které se týkají kódování a dekódování řetězců. Musíme mít totiž na paměti, že
+v&nbsp;ØMQ se přenáší zprávy obsahující pouze sekvenci bajtů a o případnou
+interpretaci těchto bajtů se musíme postarat sami. Týká se to především
+interpretace konce řetězce a potom taktéž kódování, resp.&nbsp;přesněji řečeno
+mapování mezi bajty a znaky (typicky v&nbsp;Unicode). Proto můžeme v&nbsp;kódu
+výše vidět dekódování přijatého požadavku a na konci kódování řetězce se
+zprávou zpět na pole bajtů (<strong>byte[]</strong>).</p>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Otestování komunikace klient-server</h2>
+
+<p>V&nbsp;případě, že jste si již v&nbsp;rámci předchozí kapitoly stáhli java
+archiv s&nbsp;přeloženou knihovnou JeroMQ, může překlad serveru proběhnout
+takto:</p>
+
+<pre>
+javac -cp jeromq-0.4.4-20180323.141003-1.jar Server.java
+</pre>
+
+<p>Spuštění serveru:</p>
+
+<pre>
+java -cp .:jeromq-0.4.4-20180323.141003-1.jar Server
+</pre>
+
+<p>Nyní můžeme spustit klienta a sledovat, že se serverem skutečně dokáže bez
+problémů komunikovat, i když se na každé komunikující straně používá zcela
+odlišná implementace ØMQ:</p>
+
+<pre>
+$ <strong>python3 client.py</strong>
+&nbsp;
+Connected to tcp://localhost:5555
+Sending request '1'
+1! = 1
+&nbsp;
+Sending request '10'
+10! = 3628800
+&nbsp;
+Sending request 'xyzzy'
+Wrong input!
+</pre>
+
+<p>Logy na straně serveru:</p>
+
+<pre>
+Received: 1
+Received: 10
+Received: xyzzy
+</pre>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Portace klienta do Javy</h2>
+
+<p>Samozřejmě nám nic nebrání přepsat do Javy i samotného klienta. Jedna
+z&nbsp;možných reimplementací <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep-pure-java/Client.java">může
+vypadat následovně</a>:</p>
+
+<pre>
+import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+&nbsp;
+public class <strong>Client</strong>
+{
+&nbsp;
+    static void <strong>send_request</strong>(ZMQ.Socket socket, int number)
+    {
+        String request = String.valueOf(number);
+&nbsp;
+        socket.send(request.getBytes(ZMQ.CHARSET), 0);
+        System.out.println("Sent: " + request);
+&nbsp;
+        byte[] raw_response = socket.recv(0);
+        String response = new String(raw_response, ZMQ.CHARSET);
+        System.out.println("Received from server: " + response);
+    }
+&nbsp;
+    public static void <strong>main</strong>(String[] args) throws Exception
+    {
+        try (ZContext context = new ZContext()) {
+            ZMQ.Socket socket = context.createSocket(ZMQ.REQ);
+            socket.connect("tcp://localhost:5555");
+            for (int i=0; i&lt;10; i++) {
+                send_request(socket, i);
+            }
+            send_request(socket, -10);
+        }
+    }
+}
+</pre>
+
+<p>Překlad klienta:</p>
+
+<pre>
+java -cp .:jeromq-0.4.4-20180323.141003-1.jar Client
+</pre>
+
+<p>Spuštění nové verze klienta:</p>
+
+<pre>
+java -cp .:jeromq-0.4.4-20180323.141003-1.jar Client
+</pre>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Komunikační strategie typu PUSH-PULL: přepis producenta zpráv do Javy</h2>
+
+<p>Další příklad, který přepíšeme z&nbsp;Pythonu do Javy, se skládá
+z&nbsp;producenta a konzumenta zpráv, kteří mezi sebou komunikují
+s&nbsp;využitím strategie PUSH-PULL, kterou jsme si připomněli mj.&nbsp;i
+v&nbsp;úvodních kapitolách. <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Producer.java">Javovská
+implementace producenta</a> zpráv vznikla prakticky přímým přepisem původního
+<a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example13_push_pull/producer.py">kódu
+napsaného v&nbsp;Pythonu</a> (samozřejmě až na větší
+&bdquo;ukecanost&ldquo;Javy a striktní typování):</p>
+
+<pre>
+import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+&nbsp;
+public class <strong>Producer</strong>
+{
+    static final int PORT = 5555;
+&nbsp;
+    static void <strong>send_message</strong>(ZMQ.Socket socket, String message)
+    {
+        socket.send(message.getBytes(ZMQ.CHARSET), 0);
+    }
+&nbsp;
+    public static void <strong>main</strong>(String[] args) throws Exception
+    {
+        try (ZContext context = new ZContext()) {
+            ZMQ.Socket socket = context.createSocket(ZMQ.PUSH);
+&nbsp;
+            String address = "tcp://*:" + PORT;
+            socket.bind(address);
+            System.out.println("Bound to address " + address);
+&nbsp;
+            for (int i=0; i&lt;100; i++) {
+                String message = "Messsage #" + i;
+                send_message(socket, message);
+                try {
+                    Thread.sleep(50);
+                }
+                catch (InterruptedException e) {
+                    System.out.println("Interrupted");
+                    return;
+                }
+            }
+        }
+    }
+}
+</pre>
+
+<p>Spuštění producenta se nebude nijak lišit od předchozích implementací
+serveru či klienta &ndash; pouze musíme zajistit, aby na <i>classpath</i> byl
+uložen mj.&nbsp;i Java archiv s&nbsp;knihovnou <i>JeroMQ</i>:</p>
+
+<pre>
+java -cp .:jeromq-0.4.4-20180323.141003-1.jar Producer
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Komunikační strategie typu PUSH-PULL: přepis konzumenta zpráv do Javy</h2>
+
+<p>I při přepisu konzumenta zpráv jsme vycházeli <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example13_push_pull/consumer.py">z&nbsp;originálního
+skriptu vytvořeného v&nbsp;Pythonu</a>. Povšimněte si, že se <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Consumer.java">v&nbsp;javovské
+verzi konzumenta</a> opět převádí pole bajtů na řetězec:</p>
+
+<pre>
+import org.zeromq.ZMQ;
+import org.zeromq.ZContext;
+&nbsp;
+public class <strong>Consumer</strong>
+{
+    static final int PORT = 5555;
+&nbsp;
+    static void <strong>receive_messages</strong>(ZMQ.Socket socket)
+    {
+        int cnt = 0;
+        while (true) {
+            byte[] raw_message = socket.recv(0);
+            cnt++;
+            String message = new String(raw_message, ZMQ.CHARSET);
+            System.out.println("Received message: " + message);
+        }
+    }
+&nbsp;
+    public static void <strong>main</strong>(String[] args) throws Exception
+    {
+        try (ZContext context = new ZContext()) {
+            ZMQ.Socket socket = context.createSocket(ZMQ.PULL);
+&nbsp;
+            String address = "tcp://localhost:" + PORT;
+            socket.connect(address);
+            System.out.println("Connected to " + address);
+&nbsp;
+            System.out.println("Waiting for message...");
+&nbsp;
+            receive_messages(socket);
+        }
+    }
+}
+</pre>
+
+<p>Spuštění konzumenta:</p>
+
+<pre>
+java -cp .:jeromq-0.4.4-20180323.141003-1.jar Consumer
+</pre>
+
+<p>Ukázka vzájemného posílání zpráv od producenta ke konzumentovi:</p>
+
+<pre>
+$ <strong>./run_producer.sh </strong>
+Bound to address tcp://*:5555
+</pre>
+
+<pre>
+$ <strong>./run_consumer.sh </strong>
+Connected to tcp://localhost:5555
+Waiting for message...
+Received message: Messsage #0
+Received message: Messsage #1
+Received message: Messsage #2
+...
+...
+...
+Received message: Messsage #97
+Received message: Messsage #98
+Received message: Messsage #99
+</pre>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Rozdělení zátěže mezi větší počet konzumentů (workerů)</h2>
+
+<p>Nic nám samozřejmě nebrání spustit větší množství konzumentů zpráv (workerů)
+a tím pádem rozdělit zátěž &ndash; úkoly vytvářené producentem. Zkusme si
+například pustit tři workery a sledovat algoritmus <i>round robin</i>
+v&nbsp;praxi:</p>
+
+<p>Worker #1:</p>
+
+<pre>
+$ <strong>./run_consumer.sh </strong>
+&nbsp;
+Connected to tcp://localhost:5555
+Waiting for message...
+Received message: Messsage #0
+Received message: Messsage #1
+Received message: Messsage #4
+Received message: Messsage #7
+...
+...
+...
+Received message: Messsage #91
+Received message: Messsage #94
+Received message: Messsage #97
+</pre>
+
+<p>Worker #2:</p>
+
+<pre>
+$ <strong>./run_consumer.sh </strong>
+&nbsp;
+Connected to tcp://localhost:5555
+Waiting for message...
+Received message: Messsage #2
+Received message: Messsage #5
+Received message: Messsage #8
+...
+...
+...
+Received message: Messsage #92
+Received message: Messsage #95
+Received message: Messsage #98
+</pre>
+
+<p>Worker #3:</p>
+
+<pre>
+$ <strong>./run_consumer.sh </strong>
+&nbsp;
+Connected to tcp://localhost:5555
+Waiting for message...
+Received message: Messsage #3
+Received message: Messsage #6
+Received message: Messsage #9
+...
+...
+...
+Received message: Messsage #93
+Received message: Messsage #96
+Received message: Messsage #99
+</pre>
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu a taktéž v&nbsp;programovacím jazyku C byly uloženy do Git
+repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce.</p>
+
+<table>
+<tr><th>Příklad</th><th>Skript/kód</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>1</td><td>producer.py</td><td>producent na začátku pipeline</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/producer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/producer.py</a></td></tr>
+<tr><td>1</td><td>worker1.py</td><td>první worker jako součást pipeline</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker1.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker1.py</a></td></tr>
+<tr><td>1</td><td>worker2.py</td><td>druhý worker jako součást pipeline</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker2.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/worker2.py</a></td></tr>
+<tr><td>1</td><td>collector.py</td><td>shromažďovač výsledků na konci pipeline</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/collector.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example15_push_pull_pipeline/collector.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>2</td><td>streamer.py</td><td>použití zařízení typu streamer</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/streamer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/streamer.py</a></td></tr>
+<tr><td>2</td><td>producer.py</td><td>komunikační strategie PUSH-PULL, producent</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/producer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/producer.py</a></td></tr>
+<tr><td>2</td><td>consumer.py</td><td>komunikační strategie PUSH-PULL, konzument</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/consumer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example23_push_pull_streamer/consumer.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>3</td><td>streamer.py</td><td>použití zařízení typu streamer (producent a streamer současně)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/streamer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/streamer.py</a></td></tr>
+<tr><td>3</td><td>consumer.py</td><td>komunikační strategie PUSH-PULL, konzument</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/consumer.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example24_push_pull_streamer_device/consumer.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>4</td><td>server.py</td><td>použití zařízení typu queue (server a queue současně)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example25_queue_device/server.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example25_queue_device/server.py</a></td></tr>
+<tr><td>4</td><td>client.py</td><td>komunikační strategie REQ-REP, klient</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example25_queue_device/client.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/python/example25_queue_device/client.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>5</td><td>client.py</td><td>klient napsaný v&nbsp;Pythonu (REQ-REP)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep/client.py">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/client.py</a></td></tr>
+<tr><td>5</td><td>Server.java</td><td>server napsaný v&nbsp;Javě (REQ-REP)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep/Server.java">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/Server.java</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>6</td><td>Client.java</td><td>klient napsaný v&nbsp;Javě (REQ-REP)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep-pure-java/Client.java">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep-pure-java/Client.java</a></td></tr>
+<tr><td>6</td><td>Server.java</td><td>server napsaný v&nbsp;Javě (REQ-REP)</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep-pure-java/Server.java">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/req-rep-pure-java/Server.java</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>7</td><td>Producer.java</td><td>producent zpráv naprogramovaný v&nbsp;Javě</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Producer.java">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Producer.java</a></td></tr>
+<tr><td>7</td><td>Consumer.java</td><td>konzument zpráv naprogramovaný v&nbsp;Javě</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Consumer.java">https://github.com/tisnik/message-queues-examples/blob/master/0mq/java/push-pull/Consumer.java</a></td></tr>
+</table>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Odkazy na předchozí části seriálu</h2>
+
+<p>V&nbsp;této kapitole jsou uvedeny odkazy na všech osm předchozích částí
+seriálu, v&nbsp;němž se zabýváme různými způsoby implementace front zpráv a
+k&nbsp;nim přidružených technologií:</p>
+
+<ol>
+
+<li>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí<br />
+<a href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/</a>
+</li>
+
+<li>RabbitMQ: jedna z nejúspěšnějších implementací brokera<br />
+<a href="https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/">https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/</a>
+</li>
+
+<li>Pokročilejší operace nabízené systémem RabbitMQ<br />
+<a href="https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/">https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/</a>
+</li>
+
+<li>ØMQ: knihovna pro asynchronní předávání zpráv<br />
+<a href="https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/">https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/</a>
+</li>
+
+<li>Další možnosti poskytované knihovnou ØMQ<br />
+<a href="https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/">https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/</a>
+</li>
+
+</ol>
+
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>Snapshot JeroMQ verze 0.4.4<br />
+<a href="https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/">https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/</a>
+</li>
+
+<li>Repositář knihovny JeroMQ<br />
+<a href="https://github.com/zeromq/jeromq/">https://github.com/zeromq/jeromq/</a>
+</li>
+
+<li>ØMQ &ndash; Distributed Messaging <br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ØMQ Community<br />
+<a href="http://zeromq.org/community">http://zeromq.org/community</a>
+</li>
+
+<li>Get The Software<br />
+<a href="http://zeromq.org/intro:get-the-software">http://zeromq.org/intro:get-the-software</a>
+</li>
+
+<li>PyZMQ Documentation<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/">https://pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Module: zmq.decorators<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html">https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html</a>
+</li>
+
+<li>ZeroMQ is the answer, by Ian Barber<br />
+<a href="https://vimeo.com/20605470">https://vimeo.com/20605470</a>
+</li>
+
+<li>ZeroMQ RFC<br />
+<a href="https://rfc.zeromq.org/">https://rfc.zeromq.org/</a>
+</li>
+
+<li>ZeroMQ and Clojure, a brief introduction<br />
+<a href="https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/">https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/</a>
+</li>
+
+<li>zeromq/czmq<br />
+<a href="https://github.com/zeromq/czmq">https://github.com/zeromq/czmq</a>
+</li>
+
+<li>golang wrapper for CZMQ<br />
+<a href="https://github.com/zeromq/goczmq">https://github.com/zeromq/goczmq</a>
+</li>
+
+<li>ZeroMQ version reporting in Python<br />
+<a href="http://zguide.zeromq.org/py:version">http://zguide.zeromq.org/py:version</a>
+</li>
+
+<li>A Go interface to ZeroMQ version 4<br />
+<a href="https://github.com/pebbe/zmq4">https://github.com/pebbe/zmq4</a>
+</li>
+
+<li>Broker vs. Brokerless<br />
+<a href="http://zeromq.org/whitepapers:brokerless">http://zeromq.org/whitepapers:brokerless</a>
+</li>
+
+<li>Learning ØMQ with pyzmq<br />
+<a href="https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/">https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_new</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-new">http://api.zeromq.org/4-2:zmq-ctx-new</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_destroy</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-destroy">http://api.zeromq.org/4-2:zmq-ctx-destroy</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_bind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-bind">http://api.zeromq.org/4-2:zmq-bind</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_unbind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-unbind">http://api.zeromq.org/4-2:zmq-unbind</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_connect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-connect">http://api.zeromq.org/4-2:zmq-connect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_disconnect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-disconnect">http://api.zeromq.org/4-2:zmq-disconnect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_send</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-send">http://api.zeromq.org/4-2:zmq-send</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_recv</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-recv">http://api.zeromq.org/4-2:zmq-recv</a>
+</li>
+
+<li>Třída <strong>Context</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context</a>
+</li>
+
+<li>Třída <strong>Socket</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket</a>
+</li>
+
+<li>Python binding<br />
+<a href="http://zeromq.org/bindings:python">http://zeromq.org/bindings:python</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part I)<br />
+<a href="http://250bpm.com/blog:4">http://250bpm.com/blog:4</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part II) <br />
+<a href="http://250bpm.com/blog:8">http://250bpm.com/blog:8</a>
+</li>
+
+<li>About Nanomsg<br />
+<a href="https://nanomsg.org/">https://nanomsg.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol<br />
+<a href="https://www.amqp.org/">https://www.amqp.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol">https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol</a>
+</li>
+
+<li>Dokumentace k&nbsp;příkazu <strong>rabbitmqctl</strong><br />
+<a href="https://www.rabbitmq.com/rabbitmqctl.8.html">https://www.rabbitmq.com/rabbitmqctl.8.html</a>
+</li>
+
+<li>RabbitMQ<br />
+<a href="https://www.rabbitmq.com/">https://www.rabbitmq.com/</a>
+</li>
+
+<li>RabbitMQ Tutorials<br />
+<a href="https://www.rabbitmq.com/getstarted.html">https://www.rabbitmq.com/getstarted.html</a>
+</li>
+
+<li>RabbitMQ: Clients and Developer Tools<br />
+<a href="https://www.rabbitmq.com/devtools.html">https://www.rabbitmq.com/devtools.html</a>
+</li>
+
+<li>RabbitMQ na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/RabbitMQ">https://en.wikipedia.org/wiki/RabbitMQ</a>
+</li>
+
+<li>Streaming Text Oriented Messaging Protocol<br />
+<a href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol</a>
+</li>
+
+<li>Message Queuing Telemetry Transport<br />
+<a href="https://en.wikipedia.org/wiki/MQTT">https://en.wikipedia.org/wiki/MQTT</a>
+</li>
+
+<li>Erlang<br />
+<a href="http://www.erlang.org/">http://www.erlang.org/</a>
+</li>
+
+<li>pika 0.12.0 na PyPi<br />
+<a href="https://pypi.org/project/pika/">https://pypi.org/project/pika/</a>
+</li>
+
+<li>Introduction to Pika<br />
+<a href="https://pika.readthedocs.io/en/stable/">https://pika.readthedocs.io/en/stable/</a>
+</li>
+
+<li>Langohr: An idiomatic Clojure client for RabbitMQ that embraces the AMQP 0.9.1 model<br />
+<a href="http://clojurerabbitmq.info/">http://clojurerabbitmq.info/</a>
+</li>
+
+<li>AMQP 0-9-1 Model Explained<br />
+<a href="http://www.rabbitmq.com/tutorials/amqp-concepts.html">http://www.rabbitmq.com/tutorials/amqp-concepts.html</a>
+</li>
+
+<li>Part 1: RabbitMQ for beginners - What is RabbitMQ?<br />
+<a href="https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html">https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html</a>
+</li>
+
+<li>Downloading and Installing RabbitMQ<br />
+<a href="https://www.rabbitmq.com/download.html">https://www.rabbitmq.com/download.html</a>
+</li>
+
+<li>celery na PyPi<br />
+<a href="https://pypi.org/project/celery/">https://pypi.org/project/celery/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Python Celery &amp; RabbitMQ Tutorial<br />
+<a href="https://tests4geeks.com/python-celery-rabbitmq-tutorial/">https://tests4geeks.com/python-celery-rabbitmq-tutorial/</a>
+</li>
+
+<li>Flower: Real-time Celery web-monitor<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor">http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor</a>
+</li>
+
+<li>Asynchronous Tasks With Django and Celery<br />
+<a href="https://realpython.com/asynchronous-tasks-with-django-and-celery/">https://realpython.com/asynchronous-tasks-with-django-and-celery/</a>
+</li>
+
+<li>First Steps with Celery<br />
+<a href="http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html">http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html</a>
+</li>
+
+<li>node-celery<br />
+<a href="https://github.com/mher/node-celery">https://github.com/mher/node-celery</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+<li>Running multiple workers using Celery<br />
+<a href="https://serverfault.com/questions/655387/running-multiple-workers-using-celery">https://serverfault.com/questions/655387/running-multiple-workers-using-celery</a>
+</li>
+
+<li>celery — Distributed processing<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.html">http://docs.celeryproject.org/en/latest/reference/celery.html</a>
+</li>
+
+<li>Chains<br />
+<a href="https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains">https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains</a>
+</li>
+
+<li>Routing<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing">http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing</a>
+</li>
+
+<li>Celery Distributed Task Queue in Go<br />
+<a href="https://github.com/gocelery/gocelery/">https://github.com/gocelery/gocelery/</a>
+</li>
+
+<li>Python Decorators<br />
+<a href="https://wiki.python.org/moin/PythonDecorators">https://wiki.python.org/moin/PythonDecorators</a>
+</li>
+
+<li>Periodic Tasks<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html">http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html</a>
+</li>
+
+<li>celery.schedules<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab">http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab</a>
+</li>
+
+<li>Pros and cons to use Celery vs. RQ<br />
+<a href="https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq">https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq</a>
+</li>
+
+<li>Priority queue<br />
+<a href="https://en.wikipedia.org/wiki/Priority_queue">https://en.wikipedia.org/wiki/Priority_queue</a>
+</li>
+
+<li>Jupyter<br />
+<a href="https://jupyter.org/">https://jupyter.org/</a>
+</li>
+
+<li>How IPython and Jupyter Notebook work<br />
+<a href="https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html">https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html</a>
+</li>
+
+<li>Context Managers<br />
+<a href="http://book.pythontips.com/en/latest/context_managers.html">http://book.pythontips.com/en/latest/context_managers.html</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2019</small></p>
+</body>
+</html>
+
