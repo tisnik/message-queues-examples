@@ -24,3 +24,6 @@ conn.send(destination1, "exit", persistent='true')
 conn.send(destination2, "exit", persistent='true')
 
 conn.disconnect()
+
+print("Done")
+

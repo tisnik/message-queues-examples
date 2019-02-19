@@ -8,11 +8,11 @@ from queue import Queue
 
 class SimpleListener(object):
 
-    def __init__(self, conn):
-        self.conn = conn
+    def __init__(self, queue):
+        self.queue = queue
 
     def on_message(self, headers, message):
-        print("Received message: {m}, putting it into queue".format(m=message))
+        print("Received message: {m}, putting it into local queue".format(m=message))
         self.queue.put(message)
 
     def on_error(self, headers, message):
@@ -34,10 +34,12 @@ print("Waiting for messages...")
 
 while True:
     item = q.get()
+    print("Begin working on " + item)
     if item == "exit":
         break
 
-    print(item)
+    time.sleep(1)
     q.task_done()
+    print("Finished working on " + item)
 
 conn.disconnect()
