@@ -4,7 +4,7 @@ import time
 import stomp
 
 
-class SimpleListener(object):
+class SimpleListener:
 
     def __init__(self, conn):
         self.conn = conn
