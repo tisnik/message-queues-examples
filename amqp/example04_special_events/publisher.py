@@ -5,7 +5,7 @@ from proton.reactor import Container
 ADDRESS = "localhost:5672"
 TARGET = "queue://test"
 
-MAX_MESSAGES = 100
+MAX_MESSAGES = 1
 
 
 class Publisher(MessagingHandler):
