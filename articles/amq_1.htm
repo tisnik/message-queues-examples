@@ -1,0 +1,1789 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Apache ActiveMQ - další systém implementující message brokera</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Apache ActiveMQ - další systém implementující message brokera</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>Další implementací message brokeru, s&nbsp;níž se seznámíme, je nástroj nazvaný Apache ActiveMQ. Dnes si ukážeme jeho instalaci, základní metody komunikace a taktéž utility určené pro sledování a ovládání tohoto nástroje.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Apache ActiveMQ - další systém implementující message brokera</a></p>
+<p><a href="#k02">2. Protokoly podporované systémem Apache ActiveMQ</a></p>
+<p><a href="#k03">3. Instalace Apache ActiveMQ</a></p>
+<p><a href="#k04">4. Základní příkazy podporované nástrojem <strong>activemq</strong></a></p>
+<p><a href="#k05">5. Použití nástroje <strong>activemq</strong> pro poslání popř.&nbsp;pro přijetí zprávy</a></p>
+<p><a href="#k06">6. Komunikační protokol STOMP a knihovna <strong>stomp.py</strong></a></p>
+<p><a href="#k07">7. Jednoduchý producent zpráv naprogramovaný v&nbsp;Pythonu</a></p>
+<p><a href="#k08">8. Konzument zpráv naprogramovaný taktéž v&nbsp;Pythonu</a></p>
+<p><a href="#k09">9. Využití komunikační strategie PUSH-PULL s&nbsp;frontami zpráv</a></p>
+<p><a href="#k10">10. Sledování stavu Apache ActiveMQ z&nbsp;konzole</a></p>
+<p><a href="#k11">11. Webové rozhraní Apache ActiveMQ</a></p>
+<p><a href="#k12">12. Přístup k&nbsp;nastavení a stavu Apache ActiveMQ s&nbsp;využitím nástroje <strong>JConsole</strong></a></p>
+<p><a href="#k13">13. Ukázka komunikace s&nbsp;Apache ActiveMQ s&nbsp;využitím telnetu přes protokol STOMP</a></p>
+<p><a href="#k14">14. Připojení a poslání zprávy do fronty</a></p>
+<p><a href="#k15">15. Další příkazy podporované protokolem STOMP</a></p>
+<p><a href="#k16">16. Od Apache ActiveMQ k&nbsp;Red Hat AMQ</a></p>
+<p><a href="#k17">17. Součásti (komponenty) systému Red Hat AMQ</a></p>
+<p><a href="#k18">18. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k19">19. Odkazy na předchozí části seriálu</a></p>
+<p><a href="#k20">20. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Apache ActiveMQ - další systém implementující message brokera</h2>
+
+<p>V&nbsp;dnešním článku si ukážeme základní práci s&nbsp;message brokerem
+nazvaným Apache ActiveMQ (neboli zkráceně Apache AMQ). Tento systém je
+naprogramován v&nbsp;Javě (i když obsahuje i jednu nativní knihovnu), podporuje
+velké množství komunikačních protokolů (včetně AMQP a STOMPu) a nabízí poměrně
+široké možnosti konfigurace. Pro práci s&nbsp;tímto message brokerem využijeme
+protokol STOMP a knihovnu <i>stomp.py</i> určenou pro jazyk Python 2 a
+samozřejmě i Python 3. Tato knihovna podporuje obě nejpoužívanější komunikační
+strategie: PUB-SUB i PUSH-PULL (s&nbsp;frontami), popř.&nbsp;lze nakonfigurovat
+směrování zpráv a dokonce i jejich persistenci (uložení do různých typů
+databází, což je téma, které si popíšeme příště).</p>
+
+<p><div class="rs-tip-major">Poznámka: název ActiveMQ může být poněkud matoucí,
+protože ještě existuje paralelně vyvíjený systém pojmenovaný ActiveMQ Artemis
+(odvozený od HornetQ), který (možná) původní ActiveMQ nahradí. Prozatím však
+k&nbsp;tomu nedošlo, takže dnešní článek je věnován prozatím poslední verzi
+Active MQ 5.15.8.</div></p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Protokoly podporované systémem Apache ActiveMQ</h2>
+
+<p>Se systémem Apache ActiveMQ je možné komunikovat pomocí několika protokolů.
+Některé protokoly, typicky ty, které jsou navrženy právě pro <i>message
+brokery</i>, se používají jak pro posílání zpráv, tak i pro jejich příjem.
+Další protokoly jsou zaměřeny pouze pro komunikaci jedním směrem, například pro
+informaci zaregistrovaných klientů o tom, že je k&nbsp;dispozici nějaká zpráva.
+V&nbsp;následující tabulce jsou jednotlivé protokoly vypsány, přičemž pro
+klasické message brokery nás budou zajímat především první tři řádky
+tabulky:</p>
+
+<table>
+<tr><th>Zkratka</th><th>Protokol</th></tr>
+<tr><td>AMQP 1.0</td><td>Advanced Message Queuing Protocol verze 1.0</td></tr>
+<tr><td>STOMP</td><td>Streaming Text Oriented Messaging Protocol</td></tr>
+<tr><td>MQTT</td><td>MQTT is a machine-to-machine connectivity protocol</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>OpenWire</td><td>tato zajímavá technologie bude popsána v&nbsp;samostatném článku</td></tr>
+<tr><td>REST</td><td>Representational state transfer</td></tr>
+<tr><td>RSS a Atom</td><td>RDF Site Summary, informace klientů se zprávou</td></tr>
+<tr><td>WSIF</td><td>Web Services Invocation Framework</td></tr>
+<tr><td>WS Notification</td><td>&nbsp;</td></tr>
+<tr><td>XMPP</td><td>Extensible Messaging and Presence Protocol</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>AUTO</td><td>viz poznámka pod tabulkou</td></tr>
+</table>
+
+<p><div class="rs-tip-major">Poznámka: AUTO není vlastní protokol, protože se
+jedná o konfigurační volbu, při níž je aktuálně použitý protokol zdetekován
+automaticky. Pouze první tři protokoly řádky tabulky obsahují skutečně
+plnohodnotné protokoly určené pro message brokery, ostatní protokoly jsou jen
+odvozené popř.&nbsp;se jedná o napojení na odlišnou technologii (příkladem je
+RSS a XMPP).</div></p>
+
+<p>V&nbsp;enterprise sféře je pravděpodobně nejpoužívanějším protokolem pro
+message brokery protokol AMQP (<i>Advanced Message Queuing Protocol</i>),
+s&nbsp;nímž jsme se již částečně setkali při popisu systému RabbitMQ. Ovšem
+zatímco RabbitMQ podporuje starší verze 0.9.1, 0.9 a 0.8, je tomu
+v&nbsp;případě Apache MQ jinak, protože je podporován novější protokol verze
+1.0 (ten se od předchozích variant liší svou sémantikou i vlastní binárním
+formátem). Jedná se o binární protokol, v&nbsp;němž je velká váha kladena nejen
+na precizní specifikaci formátu dat, ale i na popis sémantiky operací
+prováděných službami, které AMQP implementují (či možná lépe řečeno
+akceptují).</p>
+
+<p>Dalším důležitým protokolem, který lze použít pro komunikaci s&nbsp;Apache
+MQ, je protokol nazvaný <a href="http://stomp.github.io/">STOMP</a> neboli
+<i>Streaming Text Oriented Messaging Protocol</i>. Jedná se o relativně
+jednoduchý protokol založený &ndash; jak jeho název napovídá &ndash; na
+příkazech posílaných v&nbsp;textovém formátu se syntaxí, která se podobá
+protokolu HTTP. Předností STOMPu je snadná implementace klientů a
+v&nbsp;případě potřeby (ladění, simulace útoků atd.) je dokonce možné namísto
+dedikovaného klienta použít běžný nástroj <a
+href="https://linux.die.net/man/1/telnet">telnet</a>, což si ostatně ukážeme <a
+href="#k14">ve čtrnácté kapitole</a>. Ve výchozím nastavení existuje omezení
+maximální délky zprávy na 10 MB, ovšem tuto hodnotu je možné v&nbsp;případě
+potřeby změnit.</p>
+
+<p>Třetím užitečným protokolem, o němž se ve stručnosti zmíníme a který je
+systémem Apache ActiveMQ podporován, je protokol nazvaný <a
+href="http://mqtt.org/">MQTT</a>, který je mj.&nbsp;určený pro dnes populární
+IoT, tj.&nbsp;obecně pro zařízení s&nbsp;relativně malým výkonem
+popř.&nbsp;omezenými systémovými zdroji (a většinou i omezenou odolností proti
+útokům :).</p>
+
+<p><div class="rs-tip-major">Poznámka: dnešní demonstrační příklady budou
+založeny na výše zmíněném protokolu STOMP, který sice nemusí být nejrychlejší
+(je textový a vyžaduje určitý parsing na straně klienta), ovšem jeho použití a
+odladění celého systému je nejjednodušší.</div></p>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Instalace Apache ActiveMQ</h2>
+
+<p>Systém Apache ActiveMQ je z&nbsp;větší části naprogramován v&nbsp;Javě
+(kromě knihovny <i>wrapper</i> a dalších maličkostí) a vyžaduje, aby na systému
+byla nainstalována JRE (<i>Java Runtime Environment</i>) Javy 8, což by na
+většině současných systémů nemělo být problematické zajistit (navíc je možné
+v&nbsp;případě potřeby provést překlad i pro JRE Javy 7). Instalace je ve
+skutečnosti velmi snadná a spočívá se stažení a rozbalení jednoho tarballu.
+Poslední stabilní verzí Apache ActiveMQ je verze 5.18 a stáhneme ji buď běžným
+webovým prohlížečem nebo přímo z&nbsp;příkazové řádky tímto příkazem:</p>
+
+<pre>
+$ <strong>wget -O apache-activemq-5.15.8-bin.tar.gz "http://www.apache.org/dyn/closer.cgi?filename=/activemq/5.15.8/apache-activemq-5.15.8-bin.tar.gz&amp;action=download"</strong>
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: celou URL je skutečně nutné zapsat do
+uvozovek, aby nebyl znak &amp; interpretován shellem (spuštění příkazu na
+pozadí).</div></p>
+
+<p>Dále musíme získaný tarball, jehož velikost přesahuje 50 MB, rozbalit
+příkazem:</p>
+
+<pre>
+$ <strong>tar xvfz apache-activemq-5.15.8-bin.tar.gz</strong>
+...
+...
+...
+</pre>
+
+<p>Nyní si otestujeme, zda je možné spustit základní nástroj
+<strong>activemq</strong>, který je umístěný v&nbsp;podadresáři
+<strong>bin</strong>:</p>
+
+<pre>
+$ <strong>cd apache-activemq-5.15.8/bin/</strong>
+</pre>
+
+<p>Zkusíme si zobrazit nápovědu se základními podporovanými příkazy:</p>
+
+<pre>
+$ <strong>./activemq help</strong>
+&nbsp;
+Usage: Main [--extdir &lt;dir&gt;] [task] [task-options] [task data]
+&nbsp;
+Tasks:
+    browse                   - Display selected messages in a specified destination.
+    bstat                    - Performs a predefined query that displays useful statistics regarding the specified broker
+    consumer                 - Receives messages from the broker
+    create                   - Creates a runnable broker instance in the specified path.
+    decrypt                  - Decrypts given text
+    dstat                    - Performs a predefined query that displays useful tabular statistics regarding the specified destination type
+    encrypt                  - Encrypts given text
+    export                   - Exports a stopped brokers data files to an archive file
+    list                     - Lists all available brokers in the specified JMX context
+    producer                 - Sends messages to the broker
+    purge                    - Delete selected destination's messages that matches the message selector
+    query                    - Display selected broker component's attributes and statistics.
+    start                    - Creates and starts a broker using a configuration file, or a broker URI.
+    stop                     - Stops a running broker specified by the broker name.
+&nbsp;
+Task Options (Options specific to each task):
+    --extdir &lt;dir&gt;  - Add the jar files in the directory to the classpath.
+    --version       - Display the version information.
+    -h,-?,--help    - Display this help information. To display task specific help, use Main [task] -h,-?,--help
+&nbsp;
+Task Data:
+    - Information needed by each specific task.
+&nbsp;
+JMX system property options:
+    -Dactivemq.jmx.url=&lt;jmx service uri&gt; (default is: 'service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi')
+    -Dactivemq.jmx.user=&lt;user name&gt;
+    -Dactivemq.jmx.password=&lt;password&gt;
+</pre>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Základní příkazy podporované nástrojem <strong>activemq</strong></h2>
+
+<p>Ukažme si ve stručnosti ty nejzákladnější příkazy, které jsou nástrojem
+<strong>activemq</strong> podporovány.</p>
+
+<p>Spuštění služby ActiveMQ na pozadí:</p>
+
+<pre>
+$ <strong>./activemq start</strong>
+&nbsp;
+INFO: Loading '/home/tester/apache-activemq-5.15.8//bin/env'
+INFO: Using java '/usr/bin/java'
+INFO: Starting - inspect logfiles specified in logging.properties and log4j.properties to get details
+INFO: pidfile created : '/home/tester/apache-activemq-5.15.8//data/activemq.pid' (pid '9114')
+</pre>
+
+<p>Spuštění služby ActiveMQ na popředí (všechny zprávy se budou vypisovat na
+terminál):</p>
+
+<pre>
+$ <strong>./activemq console</strong>
+&nbsp;
+...
+...
+...
+</pre>
+
+<p>Ukončení běžící služby ActiveMQ:</p>
+
+<pre>
+$ <strong>./activemq stop</strong>
+&nbsp;
+Connecting to pid: 20378
+Stopping broker: localhost
+. TERMINATED
+</pre>
+
+<p>Výpis dostupných brokerů:</p>
+
+<pre>
+$ <strong>./activemq list</strong>
+&nbsp;
+Connecting to pid: 19789
+brokerName = localhost
+</pre>
+
+<p>Dtto, ovšem ve chvíli, kdy je služba pozastavena:</p>
+
+<pre>
+$ <strong>./activemq list</strong>
+&nbsp;
+INFO: Broker not available at: service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi
+</pre>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Použití nástroje <strong>activemq</strong> pro poslání popř.&nbsp;pro přijetí zprávy</h2>
+
+<p>Nástroj <strong>activemq</strong> může být dokonce použit i pro poslání
+popř.&nbsp;pro přijetí zprávy. Ve skutečnosti se zdaleka nejedná o ten
+nejrychlejší způsob, jak s&nbsp;ActiveMQ pracovat, ovšem je zdaleka
+nejjednodušší. V&nbsp;příkladech se použije výchozí fronta nazvaná
+&bdquo;queue://TEST&ldquo;.</p>
+
+<p>Poslání stovky shodných zpráv &bdquo;Hello world&ldquo;:</p>
+
+<pre>
+$ <strong>./activemq producer --message "Hello world"</strong>
+</pre>
+
+<p>Poslání jediné zprávy &bdquo;Hello world&ldquo;:</p>
+
+<pre>
+$ <strong>./activemq producer --message "Hello world" --messageCount 1</strong>
+</pre>
+
+<p>Poslání zprávy, jejímž tělem jsou data získaná z&nbsp;určité URL.
+Následující příklad je jen umělý, ve skutečnosti se spíše bude volat nějaké
+REST API pro získání dat:</p>
+
+<pre>
+$ <strong>./activemq producer --payloadUrl https://www.root.cz --messageCount 1</strong>
+</pre>
+
+<p>A nakonec spustíme konzumenta zpráv, při jehož spuštění je možné určit, zda
+se má zpracování provést v&nbsp;transakci či nikoli:</p>
+
+<pre>
+$ <strong>./activemq consumer --transacted true</strong>
+&nbsp;
+...
+...
+...
+ INFO | consumer-1 Received Hello
+ INFO | consumer-1 Committing transaction: 99
+ INFO | consumer-1 Consumed: 1000 messages
+ INFO | consumer-1 Consumer thread finished
+</pre>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Komunikační protokol STOMP a knihovna <strong>stomp.py</strong></h2>
+
+<p>V&nbsp;dnešních demonstračních příkladech použijeme pro komunikaci klientů
+se systémem Apache ActiveMQ protokol STOMP, o němž jsme se ve stručnosti
+zmínili v&nbsp;úvodních kapitolách. Příklady budou &ndash; podobně jako
+v&nbsp;předchozích částech tohoto seriálu &ndash; naprogramovány v&nbsp;jazyku
+Python, takže nejdříve nainstalujeme knihovnu nazvanou
+<strong>stomp.py</strong> zajišťující rozhraní k&nbsp;jakémukoli <i>message
+brokerovi</i>, který tento protokol využívá, samozřejmě včetně Apache ActiveMQ.
+Tato knihovna existuje jak pro Python 2.x, tak i pro Python 3.x a podporuje
+všechny v&nbsp;současnosti dostupné verze protokolu STOMP: 1.0, 1.0 i 1.2.</p>
+
+<p>Instalace této knihovny je snadná, protože ji <a
+href="https://pypi.org/project/stomp.py/">nalezneme v&nbsp;PyPi</a>. Pro
+jednoduchost bude instalace provedena pro právě přihlášeného uživatele:</p>
+
+<pre>
+$ <strong>pip3 install --user stomp-py</strong>
+&nbsp;
+Collecting stomp-py
+  Downloading https://files.pythonhosted.org/packages/80/c8/d13f0058ede2d83e54028cbad98a5886aaf2501017ddf4231ec1deff81b3/stomp.py-4.1.15-py2.py3-none-any.whl
+Installing collected packages: stomp-py
+Successfully installed stomp-py
+</pre>
+
+<p>Základní test, zda se instalace podařila, lze provést přímo
+z&nbsp;interpretru Pythonu:</p>
+
+<pre>
+$ <strong>python3</strong>
+&nbsp;
+Python 3.6.3 (default, Oct  9 2017, 12:11:29) 
+[GCC 7.2.1 20170915 (Red Hat 7.2.1-2)] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; <strong>import stomp</strong>
+&gt;&gt;&gt; <strong>help("stomp")</strong>
+&nbsp;
+Help on package stomp:
+
+NAME
+    stomp
+
+DESCRIPTION
+    stomp.py provides connectivity to a message broker supporting the STOMP protocol.
+    Protocol versions 1.0, 1.1 and 1.2 are supported.
+    
+    See the GITHUB project page for more information.
+    
+    Author: Jason R Briggs
+    License: http://www.apache.org/licenses/LICENSE-2.0
+...
+...
+...
+</pre>
+
+<p>Kromě vlastní knihovny <i>stomp-py</i> se nainstaluje i jednoduchý klient
+ovládaný z&nbsp;příkazového řádku. Tento klient se jmenuje jednoduše
+<strong>stomp</strong> a můžeme si vyzkoušet jeho základní funkce:</p>
+
+<pre>
+$ <strong>stomp --version</strong>
+&nbsp;
+Stomp.py Version 4.1.21
+</pre>
+
+<p>Zkusíme se připojit k&nbsp;lokálně běžící instanci Apache ActiveMQ (viz
+předchozí kapitolu):</p>
+
+<pre>
+$ <strong>stomp</strong>
+&nbsp;
+CONNECTED
+server: ActiveMQ/5.15.8
+heart-beat: 0,0
+session: ID:localhost.localdomain-38215-1549567803551-3:3
+version: 1.1
+&nbsp;
+&nbsp;
+&gt; &gt;
+</pre>
+
+<p>Výpis základních příkazů:</p>
+
+<pre>
+<strong>help</strong>
+&nbsp;
+Documented commands (type help &lt;topic&gt;):
+========================================
+EOF    begin   help  rollback  sendfile   stats        ver
+abort  commit  nack  run       sendrec    subscribe    version
+ack    exit    quit  send      sendreply  unsubscribe
+</pre>
+
+<p>Poslání zprávy do fronty nazvané &bdquo;test&ldquo;:</p>
+
+<pre>
+<strong>send /queue/test hello world</strong>
+&nbsp;
+MESSAGE
+content-length: 11
+expires: 0
+destination: /queue/test
+</pre>
+
+<p>Přihlášení se k&nbsp;odběru zpráv z&nbsp;fronty &bdquo;test&ldquo;:</p>
+
+<pre>
+<strong>subscribe /queue/test</strong>
+&nbsp;
+Subscribing to "/queue/test" with acknowledge set to "auto", id set to "1"
+subscription: 1
+priority: 4
+message-id: ID:localhost.localdomain-38215-1549567803551-3:3:-1:1:1
+timestamp: 1549631641256
+&nbsp;
+hello world
+</pre>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. Jednoduchý producent zpráv naprogramovaný v&nbsp;Pythonu</h2>
+
+<p>Zkusme si nyní naprogramovat jednoduchého producenta zpráv, které budou do
+message brokera poslány s&nbsp;využitím komunikační strategie
+<strong>PUB-SUB</strong>. To znamená, že pokud bude existovat nějaký klient
+naslouchající těmto zprávám, budou mu poslány. V&nbsp;případě, že bude
+naslouchat více klientů, budou zprávy rozeslány všem těmto klientům a pokud
+nebude připojen ani jeden klient, bude zpráva zahozena.</p>
+
+<p>Nejprve musíme zajistit připojení k&nbsp;Apache ActiveMQ běžící na stejném
+počítači. Pro protokol STOMP by měl být otevřený výchozí port 61613:</p>
+
+<pre>
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.start()
+</pre>
+
+<p>Výchozí přihlašovací jméno a heslo je
+&bdquo;admin&ldquo;/&bdquo;admin&ldquo; (i když v&nbsp;dokumentaci je psáno
+&bdquo;password&ldquo;):</p>
+
+<pre>
+conn.connect(login="admin", passcode="admin")
+</pre>
+
+<p>Zprávy se posílají metodou <strong>Connection.send</strong>, které se
+předává cíl (zde &bdquo;topic/event&ldquo;
+popř.&nbsp;&bdquo;topic/event2&ldquo;), což je jméno tématu s&nbsp;povinným
+prefixem. Dále se této metodě předá text zprávy a nepovinným parametrem
+<strong>persistent</strong> můžeme určit, zda se má zpráva uložit do nastavené
+databáze či nikoli (tedy zda přežije restart Apache ActiveMQ):</p>
+
+<pre>
+conn.send(destination1, message, persistent='true')
+</pre>
+
+<p>Úplný <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/publisher.py">zdrojový
+kód zdroje zpráv</a> bude vypadat následovně:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: samozřejmě by bylo korektnější zajistit
+zavolání metody <strong>Connection.disconnect()</strong> i ve chvíli, kdy dojde
+k&nbsp;nějaké výjimce.</div></p>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. Konzument zpráv naprogramovaný taktéž v&nbsp;Pythonu</h2>
+
+<p>Konzument (příjemce) zpráv je komplikovanější, než jejich producent. Je to
+pochopitelné, protože zatímco publikování zprávy spočívá v&nbsp;prostém
+zavolání metody <strong>Connection.send()</strong> je příjem zpráv (a čekání na
+ně) spojen s&nbsp;nějakou formou čekací smyčky, ať již aktivní či pasivní.
+V&nbsp;knihovně <i>stomp.py</i> můžeme zaregistrovat objekt, jehož metody se
+budou volat buď při příjmu zprávy nebo v&nbsp;případě, že nastane nějaká chyba.
+Tyto <i>callback</i> metody (příjem zprávy, informace o chybě) budou zavolány a
+budou jim předány hlavičky zprávy/chyby a vlastní text zprávy:</p>
+
+<pre>
+def <strong>on_message</strong>(self, headers, message):
+    print("Received message: {m}".format(m=message))
+&nbsp;
+def <strong>on_error</strong>(self, headers, message):
+    print("Received an error {e}".format(e=message))
+</pre>
+
+<p>Registrace třídy s&nbsp;těmito metodami vypadá takto:</p>
+
+<pre>
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+</pre>
+
+<p>Dále je nutné se přihlásit k&nbsp;odběru zpráv s&nbsp;automatickým
+potvrzením jejich zpracování:</p>
+
+<pre>
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: volání
+<strong>Connection.subscribe</strong> se odlišuje podle verze protokolu
+Stomp:</div></p>
+
+<pre>
+def subscribe(self, destination, id, ack='auto', headers=None, **keyword_headers):
+def subscribe(self, destination, id=None, ack='auto', headers=None, **keyword_headers):
+</pre>
+
+<p>Úplný zdrojový kód konzumenta zpráv naleznete na adrese <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/topic/event"
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Využití komunikační strategie PUSH-PULL s&nbsp;frontami zpráv</h2>
+
+<p>Nepatrnou úpravou předchozích dvou skriptů lze zajistit použití komunikační
+strategie <strong>PUSH-PULL</strong>, při níž jsou zprávy poslány do fronty a
+následně (kdykoli později) odeslány klientovi, který se připojí (ovšem jen
+jedinému klientovi, což je výchozí konfigurace). Úprava spočívá
+v&nbsp;nahrazení cíle zpráv, kdy se namísto &bdquo;/topic/event&ldquo; použije
+&bdquo;/queue/jméno_fronty&ldquo;.</p>
+
+<p>Následuje ukázka <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/publisher.py">implementace
+zdroje zpráv posílaných do fronty</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Skript, který bude <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/subscriber.py">zprávy
+z&nbsp;fronty číst</a>, bude vypadat takto:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Sledování stavu Apache ActiveMQ z&nbsp;konzole</h2>
+
+<p>V&nbsp;demonstračních příkladech jsme si ukázali zcela základní způsob
+použití Apache ActiveMQ s&nbsp;využitím protokolu STOMP. V&nbsp;dalších
+kapitolách se budeme zabývat způsobem sledování (a samozřejmě i ovlivňování)
+stavu Apache ActiveMQ, k&nbsp;čemuž máme k&nbsp;dispozici hned několik
+nástrojů.</p>
+
+<p>Základní nástroj pro sledování již známe &ndash; je jím příkaz
+<strong>activemq</strong>, který nalezneme v&nbsp;adresáři
+<strong>apache-activemq-5.15.8/bin</strong>.</p>
+
+<p>Informace o brokerovi zpráv, jednotlivých otevřených
+&bdquo;konektorech&ldquo; (porty s&nbsp;protokoly) včetně stavu jednotlivých
+front, získáme příkazem:</p>
+
+<pre>
+$ <strong>./activemq bstat</strong>
+&nbsp;
+ACTIVEMQ_HOME: /home/tester/apache-activemq-5.15.8
+ACTIVEMQ_BASE: /home/tester/apache-activemq-5.15.8
+ACTIVEMQ_CONF: /home/tester/apache-activemq-5.15.8/conf
+ACTIVEMQ_DATA: /home/tester/apache-activemq-5.15.8/data
+useJmxServiceUrl Found JMS Url: service:jmx:rmi://127.0.0.1/stub/rO0ABXN9AAAAAQAlamF2YXgubWFuYWdlbWVudC5yZW1vdGUucm1pLlJNSVNlcnZlcnhyABdqYXZhLmxhbmcucmVmbGVjdC5Qcm94eeEn2iDMEEPLAgABTAABaHQAJUxqYXZhL2xhbmcvcmVmbGVjdC9JbnZvY2F0aW9uSGFuZGxlcjt4cHNyAC1qYXZhLnJtaS5zZXJ2ZXIuUmVtb3RlT2JqZWN0SW52b2NhdGlvbkhhbmRsZXIAAAAAAAAAAgIAAHhyABxqYXZhLnJtaS5zZXJ2ZXIuUmVtb3RlT2JqZWN002G0kQxhMx4DAAB4cHc0AAtVbmljYXN0UmVmMgAACTEyNy4wLjAuMQAAiFeZdArPzVDT1a21HUEAAAFoyGEyGYABAHg=
+Connecting to pid: 9667
+BrokerName = localhost
+TotalEnqueueCount = 1350
+TotalDequeueCount = 1090
+TotalMessageCount = 21
+TotalConsumerCount = 0
+Uptime = 3 hours 9 minutes
+&nbsp;
+&nbsp;
+Name = test2
+destinationName = test2
+destinationType = Queue
+EnqueueCount = 20
+DequeueCount = 0
+ConsumerCount = 0
+DispatchCount = 0
+&nbsp;
+connectorName = openwire
+&nbsp;
+connectorName = stomp
+&nbsp;
+Name = test
+destinationName = test
+destinationType = Queue
+EnqueueCount = 21
+DequeueCount = 20
+ConsumerCount = 0
+DispatchCount = 22
+&nbsp;
+Name = event2
+destinationName = event2
+destinationType = Topic
+EnqueueCount = 80
+DequeueCount = 20
+ConsumerCount = 0
+DispatchCount = 20
+&nbsp;
+destinationName = ActiveMQ.Advisory.TempQueue_ActiveMQ.Advisory.TempTopic
+destinationType = Topic
+&nbsp;
+connectorName = ws
+&nbsp;
+Name = TEST
+destinationName = TEST
+destinationType = Queue
+EnqueueCount = 1010
+DequeueCount = 1010
+ConsumerCount = 0
+DispatchCount = 1010
+&nbsp;
+Name = KahaDBPersistenceAdapter[/home/tester/apache-activemq-5.15.8/data/kahadb,Index:/home/tester/apache-activemq-5.15.8/data/kahadb]
+&nbsp;
+connectorName = amqp
+&nbsp;
+&nbsp;
+Name = event
+destinationName = event
+destinationType = Topic
+EnqueueCount = 94
+DequeueCount = 40
+ConsumerCount = 0
+DispatchCount = 40
+&nbsp;
+connectorName = mqtt
+</pre>
+
+<p>Podobně znějící příkaz <strong>dstat</strong> nám podá přehlednější
+informace o frontách, jejich velikosti, počtu připojených producentů a
+konzumentů zpráv, počtu zpráv ve frontách a taktéž informace o paměťových
+požadavcích jednotlivých front:</p>
+
+<pre>
+$ <strong>./activemq dstat</strong>
+&nbsp;
+ACTIVEMQ_HOME: /home/tester/apache-activemq-5.15.8
+ACTIVEMQ_BASE: /home/tester/apache-activemq-5.15.8
+ACTIVEMQ_CONF: /home/tester/apache-activemq-5.15.8/conf
+ACTIVEMQ_DATA: /home/tester/apache-activemq-5.15.8/data
+useJmxServiceUrl Found JMS Url: service:jmx:rmi://127.0.0.1/stub/rO0ABXN9AAAAAQAlamF2YXgubWFuYWdlbWVudC5yZW1vdGUucm1pLlJNSVNlcnZlcnhyABdqYXZhLmxhbmcucmVmbGVjdC5Qcm94eeEn2iDMEEPLAgABTAABaHQAJUxqYXZhL2xhbmcvcmVmbGVjdC9JbnZvY2F0aW9uSGFuZGxlcjt4cHNyAC1qYXZhLnJtaS5zZXJ2ZXIuUmVtb3RlT2JqZWN0SW52b2NhdGlvbkhhbmRsZXIAAAAAAAAAAgIAAHhyABxqYXZhLnJtaS5zZXJ2ZXIuUmVtb3RlT2JqZWN002G0kQxhMx4DAAB4cHc0AAtVbmljYXN0UmVmMgAACTEyNy4wLjAuMQAAiFeZdArPzVDT1a21HUEAAAFoyGEyGYABAHg=
+Connecting to pid: 9667
+Name                                                Queue Size  Producer #  Consumer #   Enqueue #   Dequeue #   Forward #    Memory %
+ActiveMQ.Advisory.Connection                                 0           0           0          85           0           0           0
+ActiveMQ.Advisory.Consumer.Queue.TEST                        0           0           0           4           0           0           0
+ActiveMQ.Advisory.Consumer.Queue.test                        0           0           0          10           0           0           0
+ActiveMQ.Advisory.Consumer.Topic.event                       0           0           0          10           0           0           0
+ActiveMQ.Advisory.Consumer.Topic.event2                      0           0           0           6           0           0           0
+ActiveMQ.Advisory.MasterBroker                               0           0           0           1           0           0           0
+ActiveMQ.Advisory.Producer.Queue.TEST                        0           0           0           4           0           0           0
+ActiveMQ.Advisory.Queue                                      0           0           0           3           0           0           0
+ActiveMQ.Advisory.Topic                                      0           0           0           2           0           0           0
+TEST                                                         0           0           0        1010        1010           0           0
+event                                                        0           0           0          94          40           0           0
+event2                                                       0           0           0          80          20           0           0
+test                                                         1           0           0          21          20           0           0
+test2                                                       20           0           0          20           0           0           0
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: fronty na posledních čtyřech řádcích
+vznikly po spuštění našich demonstračních příkladů.</div></p>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Webové rozhraní Apache ActiveMQ</h2>
+
+<p>Ve výchozím nastavení je na adrese <a
+href="http://localhost:8161/admin">http://localhost:8161/admin</a> spuštěno
+webové rozhraní, do něhož se přihlásíte zadáním jména &bdquo;admin&ldquo; a
+hesla &bdquo;admin&ldquo;:</p>
+
+<a href="https://www.root.cz/obrazek/352776/"><img src="https://i.iinfo.cz/images/284/amq1-1-prev.png" class="image-352776" alt="&#160;" width="370" height="105" /></a>
+<p><i>Obrázek 1: Úvodní stránka webového rozhraní.</i></p>
+
+<a href="https://www.root.cz/obrazek/352777/"><img src="https://i.iinfo.cz/images/284/amq1-2-prev.png" class="image-352777" alt="&#160;" width="370" height="168" /></a>
+<p><i>Obrázek 2: Základní informace o systému po přihlášení.</i></p>
+
+<a href="https://www.root.cz/obrazek/352778/"><img src="https://i.iinfo.cz/images/284/amq1-3-prev.png" class="image-352778" alt="&#160;" width="370" height="122" /></a>
+<p><i>Obrázek 3: Informace o frontách.</i></p>
+
+<a href="https://www.root.cz/obrazek/352779/"><img src="https://i.iinfo.cz/images/284/amq1-4-prev.png" class="image-352779" alt="&#160;" width="370" height="121" /></a>
+<p><i>Obrázek 4: Konzumenti odebírající zprávy z&nbsp;vybrané fronty
+&bdquo;TEST&ldquo;.</i></p>
+
+<a href="https://www.root.cz/obrazek/352780/"><img src="https://i.iinfo.cz/images/284/amq1-5-prev.png" class="image-352780" alt="&#160;" width="370" height="219" /></a>
+<p><i>Obrázek 5: Přesný text zprávy, která je uložena ve frontě.</i></p>
+
+<a href="https://www.root.cz/obrazek/352781/"><img src="https://i.iinfo.cz/images/284/amq1-6-prev.png" class="image-352781" alt="&#160;" width="370" height="269" /></a>
+<p><i>Obrázek 6: Přes webové rozhraní je možné zprávu i odeslat.</i></p>
+
+<p><div class="rs-tip-major">Poznámka: dále zmíněný nástroj Red Hat AMQ sice
+taktéž obsahuje webovou konzoli, ovšem s&nbsp;dalšími možnostmi.</div></p>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Přístup k&nbsp;nastavení a stavu Apache ActiveMQ s&nbsp;využitím nástroje <strong>JConsole</strong></h2>
+
+<p>Systém Apache ActiveMQ naprostou většinu parametrů poskytuje ke čtení (a
+některé i k&nbsp;modifikaci) přes technologii <i>Java Management Extensions
+(JMX)</i>. Díky tomu je možné ActiveMQ sledovat a konfigurovat z&nbsp;jakékoli
+aplikace, která dokáže komunikovat přes JMX. Základní aplikací, která je
+k&nbsp;dispozici v&nbsp;každé instalaci JDK (nikoli však pouze JRE!) je
+standardní nástroj nazvaný <i>JConsole</i>, který se spouští příkazem
+<strong>jconsole</strong>. Podívejme se nyní alespoň ve stručnosti na to, jak
+lze JConsoli použít společně s&nbsp;ActiveMQ.</p>
+
+<a href="https://www.root.cz/obrazek/352782/"><img src="https://i.iinfo.cz/images/284/amq1-7-prev.png" class="image-352782" alt="&#160;" width="324" height="270" /></a>
+<p><i>Obrázek 7: Po spuštění příkazu <strong>jconsole</strong> je nutné vybrat
+proces activemq.jar a popř.&nbsp;potvrdit, že chceme použít nezabezpečené
+připojení.</i></p>
+
+<a href="https://www.root.cz/obrazek/352783/"><img src="https://i.iinfo.cz/images/284/amq1-8-prev.png" class="image-352783" alt="&#160;" width="324" height="270" /></a>
+<p><i>Obrázek 8: Na listu nazvaném MBeans vyberte uzel org.apache.activemq a
+uvidíte všechny atributy poskytované běžícím systémem.</i></p>
+
+<a href="https://www.root.cz/obrazek/352784/"><img src="https://i.iinfo.cz/images/284/amq1-9-prev.png" class="image-352784" alt="&#160;" width="324" height="270" /></a>
+<p><i>Obrázek 9: Na tomto screenshotu je ukázáno, že po vybrání fronty nazvané
+&bdquo;TEST&ldquo; je možné volat některé metody ovlivňující její konfiguraci.
+Další dvě fronty &bdquo;test&ldquo; a &bdquo;test2&ldquo; byly vytvořeny
+automaticky našimi demonstračními příklady zmíněnými v&nbsp;předchozích
+kapitolách.</i></p>
+
+<a href="https://www.root.cz/obrazek/352785/"><img src="https://i.iinfo.cz/images/284/amq1-10-prev.png" class="image-352785" alt="&#160;" width="324" height="270" /></a>
+<p><i>Obrázek 10: Vpravo nahoře jsou vypsány všechny dostupné fronty, přesněji
+řečeno datové typy, kterými jsou reprezentovány.</i></p>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Ukázka komunikace s&nbsp;Apache ActiveMQ s&nbsp;využitím telnetu přes protokol STOMP</h2>
+
+<p>Díky tomu, že protokol STOMP je navržen takovým způsobem, aby bylo velmi
+snadné implementovat nové klienty, a současně se jedná o čistě textový
+protokol, nebude asi velkým překvapením, že je možné s&nbsp;Apache ActiveMQ
+komunikovat i s&nbsp;využitím klasického protokolu <strong>telnet</strong> a
+stejně pojmenovaného klienta.</p>
+
+<p><div class="rs-tip-major">Poznámka: na systému Windows můžete využít
+například nástroje Tera Term nebo PuTTY.</div></p>
+
+<p>Nejprve se připojíme přímo na lokální port číslo 61613, na němž Apache
+ActiveMQ očekává příkazy předávané přes protokol STOMP:</p>
+
+<pre>
+$ <strong>telnet localhost 61613</strong>
+&nbsp;
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+</pre>
+
+<p>Samotné příkazy vypadají podobně jako hlavičky protokolu HTTP:</p>
+
+<ol>
+<li>Na prvním řádku je uvedeno jméno příkazu</li>
+<li>Následují případné parametry umístěné na dalších řádcích</li>
+<li>Celá hlavička příkazu je ukončena prázdným řádkem, za ní může následovat například text zprávy</li>
+<li>Potvrzení příkazu se děje znakem Ctrl+@ (ASCII NUL), který se zapisuje přes
+Ctrl+Space (nebo zápisem čtyř nul na numerickém bloku s&nbsp;podržením
+AltGr)</li>
+</ol>
+
+<p>Pokud není tento protokol dodržen, bude spojení ukončeno, což je
+pravděpodobně nejrozumnější cesta, jak se vypořádat se špatně
+naimplementovanými klienty :-)</p>
+
+<p><div class="rs-tip-major">Poznámka: ve výpisech bude tučně označený text
+zapisovaný uživatelem, zatímco běžným fontem je zapsán výstup, který získáme na
+terminálu.</div></p>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Připojení a poslání zprávy do fronty</h2>
+
+<p>Pro navázání připojení použijeme příkaz <strong>CONNECT</strong>, na dalších
+řádcích se pak uvede jméno a heslo, prázdný řádek a konečně již zmíněný znak
+Ctrl+@:</p>
+
+<pre>
+<strong>CONNECT</strong>
+<strong>login: admin</strong>
+<strong>password: admin</strong>
+&nbsp;
+<strong>^@</strong>
+CONNECTED
+server:ActiveMQ/5.15.8
+heart-beat:0,0
+session:ID:localhost.localdomain-43853-1549550040544-3:40
+version:1.0
+</pre>
+
+<p>Dokonce je možné přímo z&nbsp;telnetu poslat i zprávu, a to konkrétně
+příkazem <strong>SEND</strong>, jehož parametry jsou cíl zprávy (topic nebo
+fronta), případné upřesnění příjemců a za prázdným řádkem text zprávy ukončený
+opět znakem Ctrl+@:</p>
+
+<pre>
+<strong>SEND</strong>
+<strong>destination:/queue/test</strong>
+<strong>receipt:</strong>
+&nbsp;
+<strong>Hello from Telnet!</strong>
+<strong>^@</strong>
+RECEIPT
+receipt-id:
+</pre>
+
+<p>Přihlášení k&nbsp;příjmu zpráv z&nbsp;fronty <i>test</i>:</p>
+
+<pre>
+<strong>SUBSCRIBE</strong>
+<strong>id:0</strong>
+<strong>destination:test</strong>
+<strong>ask:client</strong>
+&nbsp;
+<strong>^@</strong>
+</pre>
+
+<p>Přijatá zpráva se zobrazí takto:</p>
+
+<pre>
+MESSAGE
+content-length:15
+expires:0
+destination:/queue/test
+subscription:0
+priority:4
+message-id:ID:localhost.localdomain-36883-1549643957783-3:15:-1:1:19
+persistent:true
+timestamp:1549653866950
+&nbsp;
+Hello world #9!
+</pre>
+
+<p>Odpojení od Apache ActiveMQ:</p>
+
+<pre>
+<strong>DISCONNECT</strong>
+&nbsp;
+<strong>^@</strong>
+Connection closed by foreign host.
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Další příkazy podporované protokolem STOMP</h2>
+
+<p>V&nbsp;této tabulce jsou uvedeny všechny příkazy podporované protokolem
+STOMP verze 1.2:</p>
+
+<table>
+<tr><th>Příkaz</th><th>Stručný popis</th></tr>
+<tr><td>SEND</td><td>poslání zprávy</td></tr>
+<tr><td>SUBSCRIBE</td><td>přihlášení k&nbsp;odběru zpráv</td></tr>
+<tr><td>UNSUBSCRIBE</td><td>odhlášení od odběru zpráv</td></tr>
+<tr><td>ACK</td><td>potvrzení zprávy</td></tr>
+<tr><td>NACK</td><td>negativní potvrzení (vysvětlíme si příště)</td></tr>
+<tr><td>BEGIN</td><td>začátek transakce (vysvětlíme si příště)</td></tr>
+<tr><td>COMMIT</td><td>commit v&nbsp;transakci (provedení všech operací)</td></tr>
+<tr><td>ABORT</td><td>rollback transakce</td></tr>
+<tr><td>DISCONNECT</td><td>odpojení klienta</td></tr>
+</table>
+
+<p>Server naopak může posílat tyto rámce (<i>frame</i>):</p>
+
+<table>
+<tr><th>Příkaz</th><th>Stručný popis</th></tr>
+<tr><td>MESSAGE</td><td>zpráva poslaná serverem</td></tr>
+<tr><td>RECEIPT</td><td>potvrzení o zpracování nějakého příkazu serverem</td></tr>
+<tr><td>ERROR</td><td>informace o chybě potvrzené serverem</td></tr>
+</table>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Od Apache ActiveMQ k&nbsp;Red Hat AMQ</h2>
+
+<p>Kromě Apache ActiveMQ se na samotný závěr jen krátce zmíníme o existenci
+nástroje nazvaného Red Hat AMQ, který možnosti message brokera dále rozšiřuje.
+Red Hat AMQ se skládá z&nbsp;několika komponent, přičemž ústředním prvkem je
+samotný message broker odvozený od AMQ Artemis, ovšem kromě toho nabízí i
+tzv.&nbsp;Interconnect (viz další kapitolu), možnosti clusteringu, HA,
+persistenci zpráv, žurnálování, decentralizovaná a redundantní úložiště zpráv
+atd. Celý systém je možné konfigurovat centrálně, a to buď přes JMX (což jsme
+si již ukázali výše s&nbsp;nástrojem <strong>jconsole</strong>) nebo klasicky
+přes REST API.</p>
+
+<p>Podporovány jsou tyto komunikační strategie:</p>
+
+<ul>
+<li>PUSH-PULL: producer-broker-konzument(i) s&nbsp;jedinou společnou frontou</li>
+<li>PUSH-PULL: producer-broker-konzument(i) s&nbsp;více frontami pro skupiny konzumentů</li>
+<li>dtto, ovšem pro strategii PUB-SUB</li>
+<li>kombinace předchozích možností (typicky PUSH-PULL s&nbsp;&bdquo;odbočkou&ldquo; typu SUB)</li>
+</ul>
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Součásti (komponenty) systému Red Hat AMQ</h2>
+
+<p>Systém Red Hat AMQ se skládá z&nbsp;těchto základních komponent, které je
+možné vzájemně skládat a vytvářet tak systémy s&nbsp;různě komplikovanou
+architekturou:</p>
+
+<ol>
+
+<li><strong>AMQ Broker</strong> &ndash; vlastní message broker, který podporuje
+větší množství protokolů (viz tabulku níže), persistenci zpráv, samozřejmě
+podporu front, ale i load balancing, clustering atd. Broker je postavený na
+projektu ActiveMQ Artemis.</li>
+
+<li><strong>AMQ Interconnect</strong> &ndash; konfigurovatelná distribuce
+zpráv, zajišťuje směrování (routing) mezi koncovými uzly (klient, message
+broker, další služby). Podporuje i tvorbu redundantních cest při směrování,
+takže je například možné zaručit funkčnost systému i při výpadku některých
+síťových prvků.</li>
+
+<li><strong>AMQ Console</strong> &ndash; tato konzole sloužící pro administraci
+brokerů, směrování zpráv a front, je odlišná od webové konzole, s&nbsp;níž jsme
+se setkali v&nbsp;předchozích kapitolách.</li>
+
+<li><strong>AMQ Clients</strong> &ndash; jednotliví (většinou multiplatformní) klienti, kteří jsou taktéž vypsáni v&nbsp;následující tabulce. Rozhraní existují pro Javu (JMS), C++, JavaScript, Python, Ruby, .NET atd.</li>
+
+</ol>
+
+<p>V&nbsp;následující tabulce jsou vypsány podporované protokoly jednotlivých
+součástí Red Hat AMQ (druhá část tabulky obsahuje jednotlivé varianty
+klientů):</p>
+
+<table>
+<tr><th>Komponenta</th><th>Jazyk</th><th>Platforma</th><th>Protokol(y)</th></tr>
+<tr><td>AMQ Broker</td><td>&times;</td><td>JVM</td><td>AMQP 1.0, MQTT, OpenWire, STOMP, Artemis Core Protocol, HornetQ Core Protocol</td></tr>
+<tr><td>AMQ Interconnect</td><td>&times;</td><td>Linux</td><td>AMQP 1.0</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>AMQ C++</td><td>C++ </td><td>Linux, Windows</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ JavaScript</td><td>JavaScript</td><td>Node.js, browsery</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ JMS</td><td>Java </td><td>JVM</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ .NET</td><td>C# </td><td>.NET</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ Python</td><td>Python </td><td>Linux</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ Ruby</td><td>Ruby </td><td>Linux</td><td>AMQP 1.0</td></tr>
+<tr><td>AMQ Core Protocol JMS</td><td>Java</td><td>JVM</td><td>Core Protocol</td></tr>
+<tr><td>AMQ OpenWire JMS</td><td>Java</td><td>JVM</td><td>OpenWire</td></tr>
+</table>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu byly uloženy do Git repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce.</p>
+
+<table>
+<tr><th>Příklad</th><th>Skript/kód</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>1</td><td>publisher.py</td><td>zdroj zpráv posílaných se strategií PUB-SUB</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/publisher.py</a></td></tr>
+<tr><td>1</td><td>subscriber.py</td><td>příjemce zpráv posílaných se strategií PUB-SUB</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>2</td><td>publisher.py</td><td>zdroj zpráv posílaných se strategií PUSH-PULL</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/publisher.py</a></td></tr>
+<tr><td>2</td><td>subscriber.py</td><td>příjemce zpráv posílaných se strategií PUSH-PULL</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/subscriber.py</a></td></tr>
+</table>
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Odkazy na předchozí části seriálu</h2>
+
+<p>V&nbsp;této kapitole jsou uvedeny odkazy na všech devět předchozích částí
+seriálu, v&nbsp;němž se zabýváme různými způsoby implementace front zpráv a
+k&nbsp;nim přidružených technologií:</p>
+
+<ol>
+
+<li>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí<br />
+<a href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/</a>
+</li>
+
+<li>RabbitMQ: jedna z nejúspěšnějších implementací brokera<br />
+<a href="https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/">https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/</a>
+</li>
+
+<li>Pokročilejší operace nabízené systémem RabbitMQ<br />
+<a href="https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/">https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/</a>
+</li>
+
+<li>ØMQ: knihovna pro asynchronní předávání zpráv<br />
+<a href="https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/">https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/</a>
+</li>
+
+<li>Další možnosti poskytované knihovnou ØMQ<br />
+<a href="https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/">https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/</a>
+</li>
+
+<li>Další možnosti nabízené knihovnou ØMQ, implementace protokolů ØMQ v čisté Javě<br />
+<a href="https://www.root.cz/clanky/dalsi-moznosti-nabizene-knihovnou-mq-implementace-protokolu-mq-v-ciste-jave/">https://www.root.cz/clanky/dalsi-moznosti-nabizene-knihovnou-mq-implementace-protokolu-mq-v-ciste-jave/</a>
+</li>
+
+</ol>
+
+
+
+<p><a name="k20"></a></p>
+<h2 id="k20">20. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>Apache ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Apache ActiveMQ Artemis<br />
+<a href="https://activemq.apache.org/artemis/">https://activemq.apache.org/artemis/</a>
+</li>
+
+<li>Apache ActiveMQ Artemis User Manual<br />
+<a href="https://activemq.apache.org/artemis/docs/latest/index.html">https://activemq.apache.org/artemis/docs/latest/index.html</a>
+</li>
+
+<li>Command Line Tools (Apache ActiveMQ)<br />
+<a href="https://activemq.apache.org/activemq-command-line-tools-reference.html">https://activemq.apache.org/activemq-command-line-tools-reference.html</a>
+</li>
+
+<li>stomp.py 4.1.21 na PyPi<br />
+<a href="https://pypi.org/project/stomp.py/">https://pypi.org/project/stomp.py/</a>
+</li>
+
+<li>Stomp Tutorial<br />
+<a href="https://access.redhat.com/documentation/en-US/Fuse_Message_Broker/5.5/html/Connectivity_Guide/files/FMBConnectivityStompTelnet.html">https://access.redhat.com/documentation/en-US/Fuse_Message_Broker/5.5/html/Connectivity_Guide/files/FMBConnectivityStompTelnet.html</a>
+</li>
+
+<li>Apache Camel<br />
+<a href="https://camel.apache.org/">https://camel.apache.org/</a>
+</li>
+
+<li>Red Hat Fuse<br />
+<a href="https://developers.redhat.com/products/fuse/overview/">https://developers.redhat.com/products/fuse/overview/</a>
+</li>
+
+<li>Confusion between ActiveMQ and ActiveMQ-Artemis?<br />
+<a href="https://serverfault.com/questions/873533/confusion-between-activemq-and-activemq-artemis">https://serverfault.com/questions/873533/confusion-between-activemq-and-activemq-artemis</a>
+</li>
+
+<li>Staré stránky projektu HornetQ<br />
+<a href="http://hornetq.jboss.org/">http://hornetq.jboss.org/</a>
+</li>
+
+<li>Snapshot JeroMQ verze 0.4.4<br />
+<a href="https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/">https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/</a>
+</li>
+
+<li>Difference between ActiveMQ vs Apache ActiveMQ Artemis<br />
+<a href="http://activemq.2283324.n4.nabble.com/Difference-between-ActiveMQ-vs-Apache-ActiveMQ-Artemis-td4703828.html">http://activemq.2283324.n4.nabble.com/Difference-between-ActiveMQ-vs-Apache-ActiveMQ-Artemis-td4703828.html</a>
+</li>
+
+<li>Microservices communications. Why you should switch to message queues<br />
+<a href="https://dev.to/matteojoliveau/microservices-communications-why-you-should-switch-to-message-queues--48ia">https://dev.to/matteojoliveau/microservices-communications-why-you-should-switch-to-message-queues--48ia</a>
+</li>
+
+<li>Stomp.py 4.1.19 documentation<br />
+<a href="https://stomppy.readthedocs.io/en/stable/">https://stomppy.readthedocs.io/en/stable/</a>
+</li>
+
+<li>Repositář knihovny JeroMQ<br />
+<a href="https://github.com/zeromq/jeromq/">https://github.com/zeromq/jeromq/</a>
+</li>
+
+<li>ØMQ &ndash; Distributed Messaging <br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ØMQ Community<br />
+<a href="http://zeromq.org/community">http://zeromq.org/community</a>
+</li>
+
+<li>Get The Software<br />
+<a href="http://zeromq.org/intro:get-the-software">http://zeromq.org/intro:get-the-software</a>
+</li>
+
+<li>PyZMQ Documentation<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/">https://pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Module: zmq.decorators<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html">https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html</a>
+</li>
+
+<li>ZeroMQ is the answer, by Ian Barber<br />
+<a href="https://vimeo.com/20605470">https://vimeo.com/20605470</a>
+</li>
+
+<li>ZeroMQ RFC<br />
+<a href="https://rfc.zeromq.org/">https://rfc.zeromq.org/</a>
+</li>
+
+<li>ZeroMQ and Clojure, a brief introduction<br />
+<a href="https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/">https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/</a>
+</li>
+
+<li>zeromq/czmq<br />
+<a href="https://github.com/zeromq/czmq">https://github.com/zeromq/czmq</a>
+</li>
+
+<li>golang wrapper for CZMQ<br />
+<a href="https://github.com/zeromq/goczmq">https://github.com/zeromq/goczmq</a>
+</li>
+
+<li>ZeroMQ version reporting in Python<br />
+<a href="http://zguide.zeromq.org/py:version">http://zguide.zeromq.org/py:version</a>
+</li>
+
+<li>A Go interface to ZeroMQ version 4<br />
+<a href="https://github.com/pebbe/zmq4">https://github.com/pebbe/zmq4</a>
+</li>
+
+<li>Broker vs. Brokerless<br />
+<a href="http://zeromq.org/whitepapers:brokerless">http://zeromq.org/whitepapers:brokerless</a>
+</li>
+
+<li>Learning ØMQ with pyzmq<br />
+<a href="https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/">https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_new</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-new">http://api.zeromq.org/4-2:zmq-ctx-new</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_destroy</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-destroy">http://api.zeromq.org/4-2:zmq-ctx-destroy</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_bind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-bind">http://api.zeromq.org/4-2:zmq-bind</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_unbind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-unbind">http://api.zeromq.org/4-2:zmq-unbind</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_connect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-connect">http://api.zeromq.org/4-2:zmq-connect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_disconnect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-disconnect">http://api.zeromq.org/4-2:zmq-disconnect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_send</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-send">http://api.zeromq.org/4-2:zmq-send</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_recv</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-recv">http://api.zeromq.org/4-2:zmq-recv</a>
+</li>
+
+<li>Třída <strong>Context</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context</a>
+</li>
+
+<li>Třída <strong>Socket</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket</a>
+</li>
+
+<li>Python binding<br />
+<a href="http://zeromq.org/bindings:python">http://zeromq.org/bindings:python</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part I)<br />
+<a href="http://250bpm.com/blog:4">http://250bpm.com/blog:4</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part II) <br />
+<a href="http://250bpm.com/blog:8">http://250bpm.com/blog:8</a>
+</li>
+
+<li>About Nanomsg<br />
+<a href="https://nanomsg.org/">https://nanomsg.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol<br />
+<a href="https://www.amqp.org/">https://www.amqp.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol">https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol</a>
+</li>
+
+<li>Dokumentace k&nbsp;příkazu <strong>rabbitmqctl</strong><br />
+<a href="https://www.rabbitmq.com/rabbitmqctl.8.html">https://www.rabbitmq.com/rabbitmqctl.8.html</a>
+</li>
+
+<li>RabbitMQ<br />
+<a href="https://www.rabbitmq.com/">https://www.rabbitmq.com/</a>
+</li>
+
+<li>RabbitMQ Tutorials<br />
+<a href="https://www.rabbitmq.com/getstarted.html">https://www.rabbitmq.com/getstarted.html</a>
+</li>
+
+<li>RabbitMQ: Clients and Developer Tools<br />
+<a href="https://www.rabbitmq.com/devtools.html">https://www.rabbitmq.com/devtools.html</a>
+</li>
+
+<li>RabbitMQ na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/RabbitMQ">https://en.wikipedia.org/wiki/RabbitMQ</a>
+</li>
+
+<li>Streaming Text Oriented Messaging Protocol<br />
+<a href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol</a>
+</li>
+
+<li>Message Queuing Telemetry Transport<br />
+<a href="https://en.wikipedia.org/wiki/MQTT">https://en.wikipedia.org/wiki/MQTT</a>
+</li>
+
+<li>Erlang<br />
+<a href="http://www.erlang.org/">http://www.erlang.org/</a>
+</li>
+
+<li>pika 0.12.0 na PyPi<br />
+<a href="https://pypi.org/project/pika/">https://pypi.org/project/pika/</a>
+</li>
+
+<li>Introduction to Pika<br />
+<a href="https://pika.readthedocs.io/en/stable/">https://pika.readthedocs.io/en/stable/</a>
+</li>
+
+<li>Langohr: An idiomatic Clojure client for RabbitMQ that embraces the AMQP 0.9.1 model<br />
+<a href="http://clojurerabbitmq.info/">http://clojurerabbitmq.info/</a>
+</li>
+
+<li>AMQP 0-9-1 Model Explained<br />
+<a href="http://www.rabbitmq.com/tutorials/amqp-concepts.html">http://www.rabbitmq.com/tutorials/amqp-concepts.html</a>
+</li>
+
+<li>Part 1: RabbitMQ for beginners - What is RabbitMQ?<br />
+<a href="https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html">https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html</a>
+</li>
+
+<li>Downloading and Installing RabbitMQ<br />
+<a href="https://www.rabbitmq.com/download.html">https://www.rabbitmq.com/download.html</a>
+</li>
+
+<li>celery na PyPi<br />
+<a href="https://pypi.org/project/celery/">https://pypi.org/project/celery/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Python Celery &amp; RabbitMQ Tutorial<br />
+<a href="https://tests4geeks.com/python-celery-rabbitmq-tutorial/">https://tests4geeks.com/python-celery-rabbitmq-tutorial/</a>
+</li>
+
+<li>Flower: Real-time Celery web-monitor<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor">http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor</a>
+</li>
+
+<li>Asynchronous Tasks With Django and Celery<br />
+<a href="https://realpython.com/asynchronous-tasks-with-django-and-celery/">https://realpython.com/asynchronous-tasks-with-django-and-celery/</a>
+</li>
+
+<li>First Steps with Celery<br />
+<a href="http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html">http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html</a>
+</li>
+
+<li>node-celery<br />
+<a href="https://github.com/mher/node-celery">https://github.com/mher/node-celery</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+<li>Running multiple workers using Celery<br />
+<a href="https://serverfault.com/questions/655387/running-multiple-workers-using-celery">https://serverfault.com/questions/655387/running-multiple-workers-using-celery</a>
+</li>
+
+<li>celery — Distributed processing<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.html">http://docs.celeryproject.org/en/latest/reference/celery.html</a>
+</li>
+
+<li>Chains<br />
+<a href="https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains">https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains</a>
+</li>
+
+<li>Routing<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing">http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing</a>
+</li>
+
+<li>Celery Distributed Task Queue in Go<br />
+<a href="https://github.com/gocelery/gocelery/">https://github.com/gocelery/gocelery/</a>
+</li>
+
+<li>Python Decorators<br />
+<a href="https://wiki.python.org/moin/PythonDecorators">https://wiki.python.org/moin/PythonDecorators</a>
+</li>
+
+<li>Periodic Tasks<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html">http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html</a>
+</li>
+
+<li>celery.schedules<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab">http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab</a>
+</li>
+
+<li>Pros and cons to use Celery vs. RQ<br />
+<a href="https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq">https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq</a>
+</li>
+
+<li>Priority queue<br />
+<a href="https://en.wikipedia.org/wiki/Priority_queue">https://en.wikipedia.org/wiki/Priority_queue</a>
+</li>
+
+<li>Jupyter<br />
+<a href="https://jupyter.org/">https://jupyter.org/</a>
+</li>
+
+<li>How IPython and Jupyter Notebook work<br />
+<a href="https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html">https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html</a>
+</li>
+
+<li>Context Managers<br />
+<a href="http://book.pythontips.com/en/latest/context_managers.html">http://book.pythontips.com/en/latest/context_managers.html</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2019</small></p>
+</body>
+</html>
+
