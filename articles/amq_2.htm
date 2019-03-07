@@ -1,0 +1,2564 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<title>Použití Apache ActiveMQ s protokolem STOMP</title>
+<meta name="Author" content="Pavel Tisnovsky" />
+<meta name="Generator" content="vim" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<style type="text/css">
+         body {color:#000000; background:#ffffff;}
+         h1  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#c00000; text-align:center; padding-left:1em}
+         h2  {font-family: arial, helvetica, sans-serif; color:#ffffff; background-color:#0000c0; padding-left:1em; text-align:left}
+         h3  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#c0c0c0; padding-left:1em; text-align:left}
+         h4  {font-family: arial, helvetica, sans-serif; color:#000000; background-color:#e0e0e0; padding-left:1em; text-align:left}
+         a   {font-family: arial, helvetica, sans-serif;}
+         li  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ol  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         ul  {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify; width:450px;}
+         p   {font-family: arial, helvetica, sans-serif; color:#000000; text-align:justify;}
+         pre {background:#e0e0e0}
+</style>
+</head>
+
+<body>
+
+<h1>Použití Apache ActiveMQ s protokolem STOMP</h1>
+
+<h3>Pavel Tišnovský</h3>
+
+<p></p>
+
+<h1>Úvodník</h1>
+
+<p>Dnes si ukážeme některé praktické příklady naprogramované v Pythonu, které komunikují s message brokerem Apache ActiveMQ (AMQ) s využitím protokolu STOMP. Vysvětlíme si potvrzování zpráv, použití transakcí i posílání binárních zpráv.</p>
+
+
+
+<h2>Obsah</h2>
+
+<p><a href="#k01">1. Použití Apache ActiveMQ s&nbsp;protokolem STOMP</a></p>
+<p><a href="#k02">2. Zjednodušení producenta a konzumenta zpráv při použití strategie PUB-SUB</a></p>
+<p><a href="#k03">3. Totéž zjednodušení při použití komunikační strategie PUSH-PULL</a></p>
+<p><a href="#k04">4. Explicitní potvrzování zpráv (<strong>ACK</strong>) vybíraných z&nbsp;fronty</a></p>
+<p><a href="#k05">5. Záporné potvrzení zprávy (<strong>NACK</strong>)</a></p>
+<p><a href="#k06">6. Chování AMQ při záporném potvrzení</a></p>
+<p><a href="#k07">7. Použití vlastní fronty na straně příjemce při využití komunikace PUSH-PULL</a></p>
+<p><a href="#k08">8. Transakce</a></p>
+<p><a href="#k09">9. Komunikace typu PUB-SUB bez transakce</a></p>
+<p><a href="#k10">10. Komunikace typu PUB-SUB v&nbsp;transakci</a></p>
+<p><a href="#k11">11. Komunikace typu PUSH-PULL bez transakce</a></p>
+<p><a href="#k12">12. Komunikace typu PUSH-PULL v&nbsp;transakci</a></p>
+<p><a href="#k13">13. Zrušení celé transakce (rollback namísto commit)</a></p>
+<p><a href="#k14">14. Využití <i>heartbeat</i> pro ověření funkčnosti jednotlivých částí systému</a></p>
+<p><a href="#k15">15. Posílání binárních zpráv</a></p>
+<p><a href="#k16">16. Producent binární zprávy</a></p>
+<p><a href="#k17">17. Konzument binární zprávy</a></p>
+<p><a href="#k18">18. Repositář s&nbsp;demonstračními příklady</a></p>
+<p><a href="#k19">19. Odkazy na předchozí části seriálu</a></p>
+<p><a href="#k20">20. Odkazy na Internetu</a></p>
+
+
+
+<p><a name="k01"></a></p>
+<h2 id="k01">1. Použití Apache ActiveMQ s&nbsp;protokolem STOMP</h2>
+
+<p><a
+href="https://www.root.cz/clanky/apache-activemq-dalsi-system-implementujici-message-brokera/">V&nbsp;předchozím
+článku</a> <a href="#k19">seriálu o message brokerech</a> jsme se seznámili
+s&nbsp;nástrojem Apache ActiveMQ (AMQ) a ukázali jsme si i dva krátké
+demonstrační příklady, které AMQ používaly jak pro komunikační strategii
+PUB-SUB, tak i pro strategii PUSH-PULL (tj.&nbsp;pro klasické fronty zpráv).
+Dnes si ukážeme další možnosti nabízené nástrojem AMQ při použití protokolu
+STOMP (<i>Streaming Text Oriented Messaging Protocol</i>), který sice nedokáže
+využít všechny možnosti AMQ, ovšem základní architekturu systému založeného na
+kombinaci AMQ+STOMP celkem bez problémů dokážeme postavit (ostatně největší
+problémy nás většinou čekají při návrhu subsystému pro persistenci zpráv
+popř.&nbsp;pro clusterování a load balancing).</p>
+
+<p><div class="rs-tip-major">Poznámka: všechny možnosti AMQ je možné využít při
+použití protokolu AMQP 1.0, který je však mnohem složitější než STOMP. Navíc,
+pokud již postavíte systém na protokolu STOMP, je výměna message brokera
+relativně jednoduchá &ndash; použít je možné například již popsaný nástroj <a
+href="https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/">RabbitMQ</a>
+popř.&nbsp;projekt Apollo (následovníka AMQ).</div></p>
+
+<p>V&nbsp;tabulce zobrazené pod tímto odstavcem jsou vypsány všechny příkazy
+podporované protokolem STOMP verze 1.2 (verze 1.1 se v&nbsp;tomto ohledu příliš
+neliší):</p>
+
+<table>
+<tr><th>#</th><th>Příkaz</th><th>Stručný popis</th></tr>
+<tr><td>1</td><td>SEND</td><td>poslání zprávy</td></tr>
+<tr><td>2</td><td>SUBSCRIBE</td><td>přihlášení k&nbsp;odběru zpráv</td></tr>
+<tr><td>3</td><td>UNSUBSCRIBE</td><td>odhlášení od odběru zpráv</td></tr>
+<tr><td>4</td><td>ACK</td><td>potvrzení zprávy</td></tr>
+<tr><td>5</td><td>NACK</td><td>negativní potvrzení (vysvětlíme si příště)</td></tr>
+<tr><td>6</td><td>BEGIN</td><td>začátek transakce (vysvětlíme si příště)</td></tr>
+<tr><td>7</td><td>COMMIT</td><td>commit v&nbsp;transakci (provedení všech operací)</td></tr>
+<tr><td>8</td><td>ABORT</td><td>rollback transakce</td></tr>
+<tr><td>9</td><td>DISCONNECT</td><td>odpojení klienta</td></tr>
+</table>
+
+<p>Ještě před popisem demonstračních příkladů se krátce zmiňme o persistenci
+zpráv. Ve výchozím nastavení jsou zprávy ukládány do databáze KahaDB, která
+nabízí mj.&nbsp;i žurnálování. Soubory s&nbsp;databází naleznete
+v&nbsp;podadresáři &bdquo;data/kahadb&ldquo;:</p>
+
+<pre>
+$ <strong>ls -1 data/kahadb/</strong>
+&nbsp;
+db-1.log
+db.data
+db.free
+db.redo
+lock
+</pre>
+
+<p>Konfiguraci ukládání zpráv nalezneme v&nbsp;souboru
+<strong>activemq.xml</strong>:</p>
+
+<pre>
+&lt;broker brokerName="broker"&gt;
+   &lt;persistenceAdapter&gt;
+     &lt;kahaDB directory="activemq-data" journalMaxFileLength="32mb"/&gt;
+   &lt;/persistenceAdapter&gt;
+&lt;/broker&gt;
+</pre>
+
+<p>Bližší informace o konfiguraci i o principu činnosti KahaDB naleznete na
+stránkách:</p>
+
+<ol>
+
+<li>KahaDB<br />
+<a href="http://activemq.apache.org/kahadb.html">http://activemq.apache.org/kahadb.html</a>
+</li>
+
+<li>Understanding the KahaDB Message Store<br />
+<a href="https://access.redhat.com/documentation/en-US/Fuse_MQ_Enterprise/7.1/html/Configuring_Broker_Persistence/files/KahaDBOverview.html">https://access.redhat.com/documentation/en-US/Fuse_MQ_Enterprise/7.1/html/Configuring_Broker_Persistence/files/KahaDBOverview.html</a>
+</li>
+
+</ol>
+
+<p>Nastavení perzistence zpráv lze samozřejmě změnit, dokonce je možné i
+vyměnit typ databáze. Podrobnosti budou popsány příště v&nbsp;rámci konfigurace
+AMQ.</p>
+
+
+
+<p><a name="k02"></a></p>
+<h2 id="k02">2. Zjednodušení producenta a konzumenta zpráv při použití strategie PUB-SUB</h2>
+
+<p>Nejprve si zopakujeme dva základní způsoby použití message brokera. Většinou
+jsou podporovány dvě rozdílně pracující komunikační strategie:</p>
+
+<ol>
+
+<li><strong>PUB-SUB</strong>: zprávy jsou posílány producentem do message
+brokera, který má k&nbsp;dispozici dynamicky se měnící seznam příjemců
+(konzumentů) zpráv. Pokud příjemce daného <i>tématu</i> zpráv existuje, je mu
+zpráva přeposlána. Podobně se systém chová při existenci většího množství
+příjemců. Zpráva je od producenta přečtena i ve chvíli, kdy neexistuje žádný
+příjemce &ndash; v&nbsp;takovém případě je zahozena (pokud se interně používá
+fronta, je jen dočasná).</li>
+
+<li><strong>PUSH-PULL</strong>: tato strategie je založena na použití fronty.
+Producent pošle zprávu message brokerovi, který ji uloží do fronty (každá
+fronta je pojmenovaná), konzumenti se mohou k&nbsp;frontě (frontám) připojit a
+zprávy přečíst. V&nbsp;tomto případě se zpráva doručí jen jedinému
+konzumentovi. Pokud se k&nbsp;frontě připojí větší množství konzumentů, je
+typicky použit algoritmus <i>round-robin</i> pro (polo)spravedlivé rozložení
+zátěže.</li>
+
+</ol>
+
+<p>Ukažme si nejdříve implementaci producenta zpráv při použití strategie
+<strong>PUB-SUB</strong>. Jak jsme si již naznačili v&nbsp;předchozím textu, je
+každé zprávě přiřazeno téma (<i>topic</i>), které může být v&nbsp;případě
+použití protokolu STOMP specifikováno následovně:</p>
+
+<pre>
+"/topic/event"
+"/topic/téma2"
+"/topic/jiné_téma"
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: podobnost s&nbsp;cestou v&nbsp;rámci
+souborového systému není náhodná.</div></p>
+
+<p>Producent zpráv se nejprve musí připojit k&nbsp;běžícímu message brokerovi.
+V&nbsp;demonstračním příkladu popsaném minule jsme pro připojení použili
+volání:</p>
+
+<pre>
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+</pre>
+
+<p>Ve skutečnosti je ovšem možné využít i zjednodušeného zápisu při volání
+konstruktoru <strong>Connection</strong>:</p>
+
+<pre>
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+</pre>
+
+<p>Zprávy se posílají metodou <strong>send</strong>, přičemž je nutné
+specifikovat jak téma, tak i vlastní zprávu:</p>
+
+<pre>
+conn.send("/topic/event", "Hello world!")
+</pre>
+
+<p>Podporovány jsou i další nepovinné parametry, například:</p>
+
+<pre>
+conn.send("/topic/event", "Hello world!", persistent='true')
+conn.send("/topic/event", "Hello world!", transaction='id-transakce')
+conn.send("/topic/event", "Hello world!", content_type='text/plain')
+</pre>
+
+<p>Po poslání všech zpráv je vhodné, aby se producent od message brokera
+odpojil:</p>
+
+<pre>
+conn.disconnect()
+</pre>
+
+<p>Podívejme se nyní na <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/publisher.py">úplný
+zdrojový kód jednoduchého producenta</a> zpráv, který použije dvě témata
+(topicy) se jmény &bdquo;event&ldquo; a &bdquo;event2&ldquo;:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Konzument (příjemce) zpráv je složitější, protože se samotný příjem zprávy
+(nebo vznik chyby) programuje s&nbsp;využitím callback metod. Samotný handler
+jednotlivých událostí může v&nbsp;nejjednodušším případě obsahovat pouze metody
+nazvané <strong>on_message</strong> (zavoláno při přijetí zprávy) a
+<strong>on_error</strong> (zavoláno v&nbsp;případě nějaké chyby). Existují
+ovšem i další callback metody, například <strong>on_disconnected</strong> a
+<strong>on_heartbeat</strong>, které si popíšeme později. Implementace handleru
+událostí vypadá takto:</p>
+
+<pre>
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+</pre>
+
+<p>Samotné připojení příjemce zpráv je řešeno shodným programovým kódem, jako u
+producenta, ovšem navíc musíme zaregistrovat výše zmíněný handler metodou
+<strong>set_listener</strong>:</p>
+
+<pre>
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+</pre>
+
+<p>K&nbsp;odebírání zpráv pro zvolené téma se přihlásíme metodou
+<strong>subscribe</strong>:</p>
+
+<pre>
+conn.subscribe(id='simple_listener', destination="/topic/zvolené_téma", ack='auto')
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: nepovinný parametr <strong>ack</strong>
+určuje, jakým způsobem se potvrzuje zpracování zpráv. My jsme zvolili možnost
+&bdquo;auto&ldquo;. tj.&nbsp;zpráva je ihned po svém přijetí potvrzena, i když
+ve skutečnosti není zaručeno, že bude bez problémů i zpracována.</div></p>
+
+<p>Opět si ukažme <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/subscriber.py">úplný
+zdrojový kód jednoduchého konzumenta</a> zpráv:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/topic/event"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+
+
+<p><a name="k03"></a></p>
+<h2 id="k03">3. Totéž zjednodušení při použití komunikační strategie PUSH-PULL</h2>
+
+<p>Podobným způsobem můžeme implementovat producenta zpráv posílaných do front
+a tudíž používajících komunikační strategii <strong>PUSH-PULL</strong> a nikoli
+<strong>PUB-SUB</strong>. Na straně producenta se změní pouhé dva řádky, na
+nichž je specifikován cíl zpráv (z&nbsp;pohledu producenta je cílem nějaký bod
+message brokera). U strategie <strong>PUB-SUB</strong> byly cíle pojmenovány
+takto:</p>
+
+<pre>
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+</pre>
+
+<p>kdežto v&nbsp;případě strategie <strong>PUSH-PULL</strong> použijeme:</p>
+
+<pre>
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: záleží samozřejmě na nás, kolik cílů
+zpráv budeme používat. V&nbsp;případě většiny producentů zpráv se s&nbsp;velkou
+pravděpodobnstí použije jen jediný cíl.</div></p>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/publisher.py">Nejjednodušší
+producent zpráv</a> posílaných do dvojice front může vypadat takto:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/subscriber.py">Konzument
+(příjemce) zpráv se změní jen nepatrně</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+
+
+<p><a name="k04"></a></p>
+<h2 id="k04">4. Explicitní potvrzování zpráv (<strong>ACK</strong>) vybíraných z&nbsp;fronty</h2>
+
+<p>U všech prozatím zmíněných konzumentů zpráv jsme používali automatické
+potvrzení jejich zpracování. To spočívá v&nbsp;tom, že se zpráva ihned po svém
+přijetí označí za zpracovanou a je vyřazena z&nbsp;příslušné fronty (message
+broker na ní zcela &bdquo;zapomene&ldquo;). Nastavení automatického potvrzení
+se provádělo přímo při přihlašování konzumenta zpráv k&nbsp;nějaké frontě či
+k&nbsp;tématu:</p>
+
+<pre>
+conn.subscribe(id='simple_listener', destination=destination, <strong>ack='auto'</strong>)
+</pre>
+
+<p>Můžeme ovšem specifikovat i odlišné chování &ndash; explicitní potvrzení o
+tom, že zpráva byla zpracována:</p>
+
+<pre>
+conn.subscribe(id='simple_listener', destination=destination, <strong>ack='client'</strong>)
+</pre>
+
+<p>V&nbsp;tomto případě je konzument povinen explicitně potvrdit zpracování
+zprávy:</p>
+
+<pre>
+def <strong>on_message</strong>(self, headers, message):
+    print("Received message: {m}".format(m=message))
+    print(headers)
+    message_id = headers['message-id']
+    subscription = headers['subscription']
+    <strong>self.conn.ack(message_id, subscription)</strong>
+</pre>
+
+<p>Nebo naopak zprávu nepotvrdit:</p>
+
+<pre>
+def <strong>on_message</strong>(self, headers, message):
+    print("Received message: {m}".format(m=message))
+    print(headers)
+    message_id = headers['message-id']
+    subscription = headers['subscription']
+    <strong>self.conn.nack(message_id, subscription)</strong>
+</pre>
+
+<p>Existuje ještě třetí stav &ndash; nepošle se ani ACK ani NACK. Tato zpráva
+není považována za zpracovanou a záleží na dalším nastavení (životnost), co se
+s&nbsp;ní stane.</p>
+
+<p><div class="rs-tip-major">Povšimněte si, že message brokerovi musíme předat
+jednoznačný identifikátor zprávy &ndash; klientská knihovna si totiž nedrží (a
+ani nemusí držet) informace o kontextu či stavu fronty.</div></p>
+
+<p><div class="rs-tip-major">Poznámka: ve skutečnosti je možné, aby se
+potvrzení/nepotvrzení zprávy vykonalo i v&nbsp;rámci transakce. V&nbsp;tomto
+případě je nutné uvést i nepovinný parametr <strong>transaction</strong> (viz
+další text).</div></p>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example05_ack/subscriber.py">Konzumenta
+zpráv upravíme</a> pro explicitní potvrzování zpráv takto:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+        print(headers)
+        message_id = headers['message-id']
+        subscription = headers['subscription']
+        self.conn.ack(message_id, subscription)
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='client')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+
+
+<p><a name="k05"></a></p>
+<h2 id="k05">5. Záporné potvrzení zprávy (<strong>NACK</strong>)</h2>
+
+<p>Podívejme se nyní, jakým způsobem je možné realizovat konzumenta zpráv,
+který zprávy sice přečte ze zvolené fronty (zde konkrétně z&nbsp;fronty nazvané
+&bdquo;test&ldquo;), ovšem nepotvrdí korektní zpracování zprávy. Konzument tedy
+musí zprávu přečíst v&nbsp;rámci svého handleru a posléze zavolá metodu
+<strong>connection.nack()</strong>, které předá jednoznačné ID zprávy:</p>
+
+<pre>
+class <strong>SimpleListener</strong>:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+        print(headers)
+        message_id = headers['message-id']
+        subscription = headers['subscription']
+        <strong>self.conn.nack(message_id, subscription)</strong>
+</pre>
+
+<p>Další změny ve zdrojovém kódu konzumenta nenastaly, jak je to ostatně patrné
+i při pohledu na <a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example06_nack/subscriber.py">jeho
+zdrojový kód</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+        print(headers)
+        message_id = headers['message-id']
+        subscription = headers['subscription']
+        self.conn.nack(message_id, subscription)
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='client')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+<p><a href="#k06">V&nbsp;navazující kapitole</a> si ukážeme, co se vlastně
+stane se zprávami, u nichž nedošlo k&nbsp;potvrzení jejich zpracování. Message
+broker totiž musí v&nbsp;tomto případě předpokládat, že problém nastal již ve
+vlastním obsahu zprávy, tedy že se nutně nemusí jednat o špatně
+naimplementovaného klienta.</p>
+
+
+
+<p><a name="k06"></a></p>
+<h2 id="k06">6. Chování AMQ při záporném potvrzení</h2>
+
+<p>Podívejme se nyní, co se stane se zprávami, které sice byly přijaty
+(přečteny z&nbsp;fronty), ovšem došlo k&nbsp;zápornému potvrzení jejich
+zpracování (<strong>NACK</strong>).</p>
+
+<p>Následující výpis byl vytvořen s&nbsp;využitím příkazu <strong>activemq
+dstat</strong>, který vypíše informace o všech frontách a taktéž o všech
+tématech.</p>
+
+<pre>
+Name                                  Queue Size  Producer #  Consumer #   Enqueue #   Dequeue #   Forward #    Memory %
+ActiveMQ.Advisory.Connection                   0           0           0           6           0           0           0
+ActiveMQ.Advisory.Consumer.Queue.test          0           0           0          10           0           0           0
+ActiveMQ.Advisory.MasterBroker                 0           0           0           1           0           0           0
+ActiveMQ.Advisory.Queue                        0           0           0           9           0           0           0
+ActiveMQ.Advisory.Topic                        0           0           0           2           0           0           0
+ActiveMQ.DLQ                                   0           0           0           0           0           0           0
+event                                          0           0           0           0           0           0           0
+event2                                         0           0           0           0           0           0           0
+test                                           0           0           0           1           1           0           0
+test2                                          0           0           0           0          20           0           0
+</pre>
+
+<p>Nás ovšem budou zajímat pouze informace o frontách (<i>queue</i>), takže
+použijeme filtr představovaný příkazem <strong>activemq dstat queues</strong>.
+Nyní bude výsledek vypadat odlišně:</p>
+
+<pre>
+Name                Queue Size  Producer #  Consumer #   Enqueue #   Dequeue #   Forward #    Memory %
+ActiveMQ.DLQ                 0           0           0           0           0           0           0
+test                         0           0           0           1           1           0           0
+test2                        0           0           0           0          20           0           0
+</pre>
+
+<p>Z&nbsp;výpisu je patrné, že v&nbsp;systému AMQ existují v&nbsp;tomto
+okamžiku tři fronty, z&nbsp;nichž dvě <strong>test</strong> a
+<strong>test2</strong> jsme vytvořili našimi demonstračními příklady a fronta
+<strong>ActiveMQ.DLQ</strong> byla vytvořena automaticky. Jméno poslední fronty
+je odvozeno z&nbsp;plného názvu &bdquo;Dead Letter Queue&ldquo;.</p>
+
+<p><div class="rs-tip-major">Poznámka: fronty byly před spuštěním příkazu
+vymazány, proto mají velikost rovnou 0. Vymazání se provádí například přes
+webové rozhraní volbou (odkazem/tlačítkem) &bdquo;purge&ldquo;.</div></p>
+
+<p>Pokud nyní spustíme <a href="#k03">výše popsaného</a> producenta zpráv, mělo
+by se vygenerovat celkem dvacet zpráv, z&nbsp;nichž deset bude uloženo do
+fronty nazvané <strong>test</strong> a dalších deset do fronty nazvané
+<strong>test2</strong>:</p>
+
+<pre>
+Name                Queue Size  Producer #  Consumer #   Enqueue #   Dequeue #   Forward #    Memory %
+ActiveMQ.DLQ                 0           0           0           0           0           0           0
+test                        10           0           0          11           1           0           0
+test2                       10           0           0          10          20           0           0
+</pre>
+
+<p>Po spuštění konzumenta (příjemce) zpráv, který odpovídá stavovým kódem
+<strong>NACK</strong> se sice přečte všech deset zpráv z&nbsp;fronty
+<strong>test</strong>, ovšem tyto zprávy se ihned poté, co message broker získá
+stav <strong>NACK</strong>, uloží do speciální fronty
+<strong>ActiveMQ.DLQ</strong>:</p>
+
+<pre>
+Name                Queue Size  Producer #  Consumer #   Enqueue #   Dequeue #   Forward #    Memory %
+ActiveMQ.DLQ                10           0           0          10           0           0           0
+test                         0           0           0          11          11           0           0
+test2                       10           0           0          10          20           0           0
+</pre>
+
+<p>Informace o těchto zprávách si můžeme relativně snadno zobrazit tímto
+příkazem:</p>
+
+<pre>
+$ <strong>./activemq browse ActiveMQ.DLQ</strong>
+</pre>
+
+<p>Výsledky by mohly vypadat následovně:</p>
+
+<pre>
+JMS_HEADER_FIELD:JMSDestination = ActiveMQ.DLQ
+JMS_CUSTOM_FIELD:originalExpiration = 0
+JMS_HEADER_FIELD:JMSDeliveryMode = persistent
+JMS_HEADER_FIELD:JMSMessageID = ID:localhost.localdomain-33489-1550598531973-3:3:-1:1:1
+JMS_BODY_FIELD:JMSBytes:1 = 
+JMS_CUSTOM_FIELD:OriginalDestination = test
+JMS_HEADER_FIELD:JMSExpiration = 0
+JMS_HEADER_FIELD:JMSPriority = 4
+JMS_HEADER_FIELD:JMSRedelivered = false
+JMS_HEADER_FIELD:JMSTimestamp = 1550607287050
+&nbsp;
+JMS_HEADER_FIELD:JMSDestination = ActiveMQ.DLQ
+JMS_CUSTOM_FIELD:originalExpiration = 0
+JMS_HEADER_FIELD:JMSDeliveryMode = persistent
+JMS_HEADER_FIELD:JMSMessageID = ID:localhost.localdomain-33489-1550598531973-3:3:-1:1:3
+JMS_BODY_FIELD:JMSBytes:1 = 
+JMS_CUSTOM_FIELD:OriginalDestination = test
+JMS_HEADER_FIELD:JMSExpiration = 0
+JMS_HEADER_FIELD:JMSPriority = 4
+JMS_HEADER_FIELD:JMSRedelivered = false
+JMS_HEADER_FIELD:JMSTimestamp = 1550607287052
+...
+...
+...
+</pre>
+
+<p>Povšimněte si, že je možné získat mj.&nbsp;i informaci o tom, ve které
+frontě byla zpráva původně uložena (hodnota atributu
+<strong>OriginalDestination</strong>).</p>
+
+<p>V&nbsp;případě, že nám existence jediné fronty typu &bdquo;DLQ&ldquo; pro
+všechny nepotvrzené zprávy nevyhovuje, můžeme si vytvořit vlastní pravidla
+editací souboru <strong>activemq.xml</strong>, který naleznete
+v&nbsp;podadresáři <strong>conf</strong>. Příkladem může být pravidlo pro
+zprávy, které byly původně poslány do fronty &bdquo;test2&ldquo;:</p>
+
+<pre>
+&lt;broker&gt;
+  &lt;destinationPolicy&gt;
+    &lt;policyMap&gt;
+      &lt;policyEntries&gt;
+        &lt;policyEntry queue="test2"&gt;
+          &lt;deadLetterStrategy&gt;
+            &lt;individualDeadLetterStrategy queuePrefix="DLQ." useQueueForQueueMessages="true"/&gt;
+          &lt;/deadLetterStrategy&gt;
+        &lt;/policyEntry&gt;
+      &lt;/policyEntries&gt;
+    &lt;/policyMap&gt;
+  &lt;/destinationPolicy&gt;
+&lt;/broker&gt;
+</pre>
+
+<p>Toto nastavení můžeme provést pro všechny fronty, protože v&nbsp;názvu
+fronty je možné použít žolíkové znaky. Podporovány jsou znaky &bdquo;.&ldquo;
+(oddělovač), &bdquo;*&ldquo; (jakékoli jméno/slovo v&nbsp;cestě) a
+&bdquo;&gt;&ldquo; (musí být uvedeno na konci, rekurzivní výskyty začínající
+daným řetězcem). To znamená, že všechny fronty mohou být reprezentovány pouze
+znakem &bdquo;&gt;&ldquo;:</p>
+
+<pre>
+&lt;broker&gt;
+  &lt;destinationPolicy&gt;
+    &lt;policyMap&gt;
+      &lt;policyEntries&gt;
+        &lt;policyEntry queue="&gt;"&gt;
+          &lt;deadLetterStrategy&gt;
+            &lt;individualDeadLetterStrategy queuePrefix="DLQ." useQueueForQueueMessages="true"/&gt;
+          &lt;/deadLetterStrategy&gt;
+        &lt;/policyEntry&gt;
+      &lt;/policyEntries&gt;
+    &lt;/policyMap&gt;
+  &lt;/destinationPolicy&gt;
+&lt;/broker&gt;
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: v&nbsp;aplikacích se složitější
+architekturou se se změnou fronty typu &bdquo;DLG&ldquo; setkáme poměrně často,
+protože si úpravy vyžaduje samotná business logika.</div></p>
+
+
+
+<p><a name="k07"></a></p>
+<h2 id="k07">7. Použití vlastní fronty na straně příjemce při využití komunikace PUSH-PULL</h2>
+
+<p>V&nbsp;dalším demonstračním příkladu si ukážeme, jak je možné upravit
+konzumenta zpráv takovým způsobem, aby konzument akceptoval všechny zprávy bez
+blokování (prakticky okamžitě). Řešení spočívá v&nbsp;tom, že
+v&nbsp;konzumentovi použijeme jeho vlastní lokální frontu, do které se zprávy
+budou ukládat (<i>enqueue</i>) v&nbsp;jednom vláknu, zatímco v&nbsp;hlavním
+vláknu se budou zprávy z&nbsp;této fronty postupně vybírat a zpracovávat,
+nezávisle na tom, jak rychle či naopak pomalu jsou zprávy generovány. Pro
+implementaci vlastní lokální fronty použijeme standardní třídu
+<strong>Queue</strong>, která umožňuje provádění operací s&nbsp;frontou
+z&nbsp;většího množství vláken (operace jsou synchronizovány). Bližší informace
+o této užitečné třídě naleznete například na stránce <a
+href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>,
+popř.&nbsp;přímo z&nbsp;interaktivní konzole Pythonu:</p>
+
+<pre>
+$ <strong>python3</strong>
+&nbsp;
+Python 3.6.3 (default, Oct  9 2017, 12:11:29) 
+[GCC 7.2.1 20170915 (Red Hat 7.2.1-2)] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+&gt;&gt;&gt; <strong>help("queue")</strong>
+</pre>
+
+<p>S&nbsp;výsledkem:</p>
+
+<pre>
+Help on module queue:
+&nbsp;
+NAME
+    queue - A multi-producer, multi-consumer queue.
+&nbsp;
+CLASSES
+    builtins.Exception(builtins.BaseException)
+        Empty
+        Full
+    builtins.object
+        Queue
+            LifoQueue
+            PriorityQueue
+...
+...
+...
+</pre>
+
+<p>V&nbsp;naší implementaci lokální fronty použijeme pouze metody
+<strong>Queue.put()</strong> a <strong>Queue.get()</strong>:</p>
+
+<pre>
+&gt;&gt;&gt; <strong>help("queue.Queue.put")</strong>
+&nbsp;
+queue.Queue.put = put(self, item, block=True, timeout=None)
+    Put an item into the queue.
+&nbsp;
+    If optional args 'block' is true and 'timeout' is None (the default),
+    block if necessary until a free slot is available. If 'timeout' is
+    a non-negative number, it blocks at most 'timeout' seconds and raises
+    the Full exception if no free slot was available within that time.
+    Otherwise ('block' is false), put an item on the queue if a free slot
+    is immediately available, else raise the Full exception ('timeout'
+    is ignored in that case).
+</pre>
+
+<p>Povšimněte si, že metoda <strong>Queue.get()</strong> je implicitně
+blokující, tj.&nbsp;pokud nebudou k&nbsp;dispozici žádné zprávy, bude hlavní
+vlákno pasivně čekat na jejich příchod:</p>
+
+<pre>
+&gt;&gt;&gt; <strong>help("queue.Queue.get")</strong>
+&nbsp;
+Help on function get in queue.Queue:
+&nbsp;
+queue.Queue.get = get(self, block=True, timeout=None)
+    Remove and return an item from the queue.
+&nbsp;
+    If optional args 'block' is true and 'timeout' is None (the default),
+    block if necessary until an item is available. If 'timeout' is
+    a non-negative number, it blocks at most 'timeout' seconds and raises
+    the Empty exception if no item was available within that time.
+    Otherwise ('block' is false), return an item if one is immediately
+    available, else raise the Empty exception ('timeout' is ignored
+    in that case).
+</pre>
+
+<p>Nyní si ukažme vlastní implementaci. Přijetí zprávy je realizováno
+v&nbsp;handleru, jehož jedním atributem je právě reference na lokální
+frontu:</p>
+
+<pre>
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, queue):
+        <strong>self.queue = queue</strong>
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}, putting it into local queue".format(m=message))
+        <strong>self.queue.put(message)</strong>
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+</pre>
+
+<p>Naproti tomu zpracování zpráv z&nbsp;lokální fronty je snadné &ndash;
+využijeme zde blokující operaci <strong>Queue.get()</strong>:</p>
+
+<pre>
+while True:
+    item = q.get()
+    print("Begin working on " + item)
+    if item == "exit":
+        break
+&nbsp;
+    time.sleep(1)
+    q.task_done()
+    print("Finished working on " + item)
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/subscriber.py">Úplný
+zdrojový kód</a> konzumenta (příjemce) zprávy může vypadat takto:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+from queue import Queue
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>(object):
+&nbsp;
+    def <strong>__init__</strong>(self, queue):
+        self.queue = queue
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}, putting it into local queue".format(m=message))
+        self.queue.put(message)
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+q = Queue()
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(q))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    item = q.get()
+    print("Begin working on " + item)
+    if item == "exit":
+        break
+&nbsp;
+    time.sleep(1)
+    q.task_done()
+    print("Finished working on " + item)
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/publisher.py">Samotný
+producent zpráv</a> je prakticky totožný s&nbsp;předchozími producenty, ovšem
+poslední zprávou bude &bdquo;exit&ldquo;, kterým automaticky ukončíme
+konzumenta (příjemce) zprávy:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+&nbsp;
+&nbsp;
+conn.send(destination1, "exit", persistent='true')
+conn.send(destination2, "exit", persistent='true')
+&nbsp;
+conn.disconnect()
+&nbsp;
+print("Done")
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: tato implementace má jednu závažnou
+nevýhodu (která souvisí s&nbsp;tím, proč se vlastně message brokery zavádějí)
+&ndash; ve chvíli, kdy konzument z&nbsp;nějakého důvodu zhavaruje, budou
+všechny zprávy ztraceny. Jedno z&nbsp;řešení spočívá v&nbsp;tom, že zvolíme
+manuální potvrzování zpráv, čímž zajistíme, že prozatím nepotvrzené zprávy
+zůstanou ve frontě message brokera, kde je možná jejich snadná a bezpečná
+perzistence.</div></p>
+
+
+
+<p><a name="k08"></a></p>
+<h2 id="k08">8. Transakce</h2>
+
+<p>Jednou z&nbsp;důležitých a mnohdy velmi užitečných vlastností protokolu
+STOMP, která je samozřejmě podporovaná i v&nbsp;systému AMQ, je možnost
+zpracovávat zprávy v&nbsp;transakci. Samotné transakce se specifikují prakticky
+stejným způsobem, jako například v&nbsp;databázových systémech &ndash;
+transakce je spuštěna metodou <strong>Connection.begin()</strong> a končí buď
+zavoláním metody <strong>Connection.commit()</strong> (dokončení transakce)
+nebo naopak zavoláním metody <strong>Connection.abort()</strong> (odvolání celé
+transakce, <a
+href="https://en.wikipedia.org/wiki/Rollback_(data_management)">rollback</a>).</p>
+
+<p>Pro podporu transakcí existují v&nbsp;protokolu STOMP tři příkazy:</p>
+
+<table>
+<tr><th>#</th><th>Příkaz</th><th>Stručný popis</th></tr>
+<tr><td>1</td><td>BEGIN</td><td>začátek transakce (vysvětlíme si příště)</td></tr>
+<tr><td>2</td><td>COMMIT</td><td>commit v&nbsp;transakci (provedení všech operací)</td></tr>
+<tr><td>3</td><td>ABORT</td><td>rollback transakce</td></tr>
+</table>
+
+<p>Použití těchto příkazů si můžeme vyzkoušet z&nbsp;klienta protokolu STOMP
+ovládaného z&nbsp;příkazového řádku:</p>
+
+<pre>
+$ <strong>stomp -H 127.0.0.1 -P 61613 -U admin -W admin</strong>
+</pre>
+
+<p>Příkazy zadávané uživatelem jsou zvýrazněny tučně:</p>
+
+<pre>
+&gt; <strong>begin</strong>
+Transaction id: 72c39904-080c-478f-a540-550b2deb9d99
+&nbsp;
+&gt; <strong>send /queue/test x</strong>
+&gt; <strong>send /queue/test y</strong>
+&gt; <strong>send /queue/test z</strong>
+&gt; <strong>commit</strong>
+Committing 72c39904-080c-478f-a540-550b2deb9d99
+&nbsp;
+&gt; <strong>begin</strong>
+Transaction id: 37d70eb2-5e91-4988-932b-e2acfe1bc275
+&nbsp;
+&gt; <strong>send /queue/test u</strong>
+&gt; <strong>send /queue/test v</strong>
+&gt; <strong>send /queue/test w</strong>
+&gt; 
+&gt; <strong>rollback</strong>
+</pre>
+
+<p>Na straně příjemce zpráv se objeví pouze informace o přijetí prvních tří
+zpráv &bdquo;x&ldquo;, &bdquo;y&ldquo; a &bdquo;z&ldquo;, zatímco zprávy
+&bdquo;u&ldquo;, &bdquo;v&ldquo; a &bdquo;w&ldquo; nejsou do fronty vloženy a
+tudíž je ani příjemce nemůže získat:</p>
+
+<pre>
+Waiting for messages...
+Received message: x
+Received message: y
+Received message: z
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: povšimněte si, že po zadání příkazu
+<strong>begin</strong> (začátek transakce) se vypíše řetězec
+s&nbsp;jednoznačným identifikátorem transakce. Ten budeme potřebovat
+v&nbsp;dalších demonstračních příkladech, protože se jedná o jeden
+z&nbsp;atributů zprávy.</div></p>
+
+<p>Rozdíl mezi použitím a nepoužitím transakcí si ukážeme na dvou
+příkladech:</p>
+
+<ol>
+<li>Producent-konzument používající PUB-SUB</li>
+<li>Producent-konzument používající PUSH-PULL</li>
+</ol>
+
+
+
+<p><a name="k09"></a></p>
+<h2 id="k09">9. Komunikace typu PUB-SUB bez transakce</h2>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/publisher.py">Zdrojový
+kód producenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+    time.sleep(1)
+    print("Done")
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/subscriber.py">Zdrojový kód konzumenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/topic/event"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+<p>Chování takto nakonfigurovaného systému bude následující (vedle sebe jsou
+zobrazeny terminály producenta a konzumenta):</p>
+
+<pre>
+                                     |   Waiting for messages...
+Publishing message: Hello world #0!  |
+Done                                 |   Received message: Hello world #0!
+Publishing message: Hello world #1!  |
+Done                                 |   Received message: Hello world #1!
+Publishing message: Hello world #2!  |
+Done                                 |   Received message: Hello world #2!
+Publishing message: Hello world #3!  |
+Done                                 |   Received message: Hello world #3!
+Publishing message: Hello world #4!  |
+Done                                 |   Received message: Hello world #4!
+Publishing message: Hello world #5!  |
+Done                                 |   Received message: Hello world #5!
+Publishing message: Hello world #6!  |
+Done                                 |   Received message: Hello world #6!
+Publishing message: Hello world #7!  |
+Done                                 |   Received message: Hello world #7!
+Publishing message: Hello world #8!  |
+Done                                 |   Received message: Hello world #8!
+Publishing message: Hello world #9!  |
+Done                                 |   Received message: Hello world #9!
+</pre>
+
+
+
+<p><a name="k10"></a></p>
+<h2 id="k10">10. Komunikace typu PUB-SUB v&nbsp;transakci</h2>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/publisher.py">Zdrojový
+kód producenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+transaction=conn.begin()
+print(transaction)
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true', transaction=transaction)
+    conn.send(destination2, message, persistent='true', transaction=transaction)
+    time.sleep(1)
+    print("Done")
+&nbsp;
+conn.commit(transaction=transaction)
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/subscriber.py">Zdrojový kód konzumenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class <strong>SimpleListener</strong>:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/topic/event"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+<p>Chování takto nakonfigurovaného systému bude následující (vedle sebe jsou
+zobrazeny terminály producenta a konzumenta):</p>
+
+<pre>
+                                     |   Waiting for messages...
+Publishing message: Hello world #0!  |
+Done                                 |
+Publishing message: Hello world #1!  |
+Done                                 |
+Publishing message: Hello world #2!  |
+Done                                 |
+Publishing message: Hello world #3!  |
+Done                                 |
+Publishing message: Hello world #4!  |
+Done                                 |
+Publishing message: Hello world #5!  |
+Done                                 |
+Publishing message: Hello world #6!  |
+Done                                 |
+Publishing message: Hello world #7!  |
+Done                                 |
+Publishing message: Hello world #8!  |
+Done                                 |
+Publishing message: Hello world #9!  |
+Done                                 | Received message: Hello world #0!
+                                     | Received message: Hello world #1!
+                                     | Received message: Hello world #2!
+                                     | Received message: Hello world #3!
+                                     | Received message: Hello world #4!
+                                     | Received message: Hello world #5!
+                                     | Received message: Hello world #6!
+                                     | Received message: Hello world #7!
+                                     | Received message: Hello world #8!
+                                     | Received message: Hello world #9!
+</pre>
+
+
+
+<p><a name="k11"></a></p>
+<h2 id="k11">11. Komunikace typu PUSH-PULL bez transakce</h2>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example10_push_pull_no_transactions/publisher.py">Zdrojový
+kód producenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+    time.sleep(2)
+    print("Done")
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Chování systému:</p>
+
+<pre>
+                                     |   Waiting for messages...
+Publishing message: Hello world #0!  |
+Done                                 |   Received message: Hello world #0!
+Publishing message: Hello world #1!  |
+Done                                 |   Received message: Hello world #1!
+Publishing message: Hello world #2!  |
+Done                                 |   Received message: Hello world #2!
+Publishing message: Hello world #3!  |
+Done                                 |   Received message: Hello world #3!
+Publishing message: Hello world #4!  |
+Done                                 |   Received message: Hello world #4!
+Publishing message: Hello world #5!  |
+Done                                 |   Received message: Hello world #5!
+Publishing message: Hello world #6!  |
+Done                                 |   Received message: Hello world #6!
+Publishing message: Hello world #7!  |
+Done                                 |   Received message: Hello world #7!
+Publishing message: Hello world #8!  |
+Done                                 |   Received message: Hello world #8!
+Publishing message: Hello world #9!  |
+Done                                 |   Received message: Hello world #9!
+</pre>
+
+
+
+<p><a name="k12"></a></p>
+<h2 id="k12">12. Komunikace typu PUSH-PULL v&nbsp;transakci</h2>
+
+<p><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example11_push_pull_transactions/publisher.py">Zdrojový kód producenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+transaction=conn.begin()
+print(transaction)
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true', transaction=transaction)
+    conn.send(destination2, message, persistent='true', transaction=transaction)
+    time.sleep(1)
+    print("Done")
+&nbsp;
+conn.commit(transaction=transaction)
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Chování systému:</p>
+
+<pre>
+                                     |   Waiting for messages...
+Publishing message: Hello world #0!  |
+Done                                 |
+Publishing message: Hello world #1!  |
+Done                                 |
+Publishing message: Hello world #2!  |
+Done                                 |
+Publishing message: Hello world #3!  |
+Done                                 |
+Publishing message: Hello world #4!  |
+Done                                 |
+Publishing message: Hello world #5!  |
+Done                                 |
+Publishing message: Hello world #6!  |
+Done                                 |
+Publishing message: Hello world #7!  |
+Done                                 |
+Publishing message: Hello world #8!  |
+Done                                 |
+Publishing message: Hello world #9!  |
+Done                                 | Received message: Hello world #0!
+                                     | Received message: Hello world #1!
+                                     | Received message: Hello world #2!
+                                     | Received message: Hello world #3!
+                                     | Received message: Hello world #4!
+                                     | Received message: Hello world #5!
+                                     | Received message: Hello world #6!
+                                     | Received message: Hello world #7!
+                                     | Received message: Hello world #8!
+                                     | Received message: Hello world #9!
+</pre>
+
+
+
+<p><a name="k13"></a></p>
+<h2 id="k13">13. Zrušení celé transakce (rollback namísto commit)</h2>
+
+<p><a
+href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example12_transaction_abort/publisher.py">Zdrojový
+kód producenta zpráv</a>:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/queue/test"
+destination2 = "/queue/test2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+transaction=conn.begin()
+print(transaction)
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true', transaction=transaction)
+    conn.send(destination2, message, persistent='true', transaction=transaction)
+    time.sleep(1)
+    print("Done")
+&nbsp;
+conn.abort(transaction=transaction)
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Chování systému:</p>
+
+<pre>
+                                     |   Waiting for messages...
+Publishing message: Hello world #0!  |
+Done                                 |
+Publishing message: Hello world #1!  |
+Done                                 |
+Publishing message: Hello world #2!  |
+Done                                 |
+Publishing message: Hello world #3!  |
+Done                                 |
+Publishing message: Hello world #4!  |
+Done                                 |
+Publishing message: Hello world #5!  |
+Done                                 |
+Publishing message: Hello world #6!  |
+Done                                 |
+Publishing message: Hello world #7!  |
+Done                                 |
+Publishing message: Hello world #8!  |
+Done                                 |
+Publishing message: Hello world #9!  |
+Done                                 |
+</pre>
+
+
+
+<p><a name="k14"></a></p>
+<h2 id="k14">14. Využití <i>heartbeat</i> pro ověření funkčnosti jednotlivých částí systému</h2>
+
+<p>Při připojení klientů k&nbsp;message brokerovi je možné specifikovat
+parametr <strong>heartbeats</strong>, kterým se specifikuje perioda
+&bdquo;tepů&ldquo; posílaných klientem a taktéž perioda &bdquo;tepů&ldquo;,
+které klient očekává:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+destination1 = "/topic/event"
+destination2 = "/topic/event2"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)], <strong>heartbeats=(0, 0)</strong>)
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+for i in range(0, MESSAGES):
+    message = "Hello world #{i}!".format(i=i)
+    print("Publishing message: " + message)
+    conn.send(destination1, message, persistent='true')
+    conn.send(destination2, message, persistent='true')
+    time.sleep(0.5)
+    print("Done")
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>V&nbsp;druhém klientovi je nastaveno, že &bdquo;tep&ldquo; je očekáván
+každou sekundu. Pokud není detekován, je klient odpojen:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+&nbsp;
+&nbsp;
+class SimpleListener:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        print("Received message: {m}".format(m=message))
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+    def <strong>on_disconnected</strong>(self):
+        print("Disconnected")
+&nbsp;
+    def <strong>on_heartbeat</strong>(self):
+        print("Heartbeat")
+&nbsp;
+    def <strong>on_heartbeat_timeout</strong>(self):
+        print("Heartbeat timeout")
+&nbsp;
+&nbsp;
+destination = "/topic/event"
+&nbsp;
+conn = stomp.Connection([("localhost", 61613)], <strong>heartbeats=(0,1000)</strong>)
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+&nbsp;
+print("Done...")
+</pre>
+
+<p>Na straně příjemce zpráv získáme jak informace o přijatých zprávách, tak i o
+&bdquo;heartbeat&ldquo;:</p>
+
+<pre>
+Received message: Hello world #7!
+Heartbeat
+Heartbeat
+Heartbeat
+Heartbeat
+Heartbeat
+Received message: Hello world #0!
+Received message: Hello world #1!
+</pre>
+
+<p>Pokud &bdquo;heartbeat&ldquo; nepřijmeme ve specifikovaném intervalu, bude
+klient odpojen:</p>
+
+<pre>
+Heartbeat timeout: diff_receive=1.5015023681335151, time=2968372.729240428, lastrec=2968371.22773806
+Disconnected
+Disconnected
+Heartbeat timeout
+</pre>
+
+
+
+<p><a name="k15"></a></p>
+<h2 id="k15">15. Posílání binárních zpráv</h2>
+
+<p>V&nbsp;posledním příkladu si ukážeme jednu z&nbsp;možností posílání zpráv
+obsahujících binární data. Protokol STOMP sice přímo podporuje práci
+s&nbsp;binárními daty (zprávy nemusí být čistě textové), ovšem na problémy
+narazíme na straně producentů a konzumentů, zejména ve chvíli, kdy je producent
+realizován v&nbsp;jiném programovacím jazyce než konzument
+(popř.&nbsp;v&nbsp;odlišné verzi interpretru &ndash; typicky Python 2 vs.
+Python 3). Taktéž případné ladění popř.&nbsp;využití <i>telnetu</i> a podobných
+nástrojů při hledání problémů v&nbsp;systému je v&nbsp;případě přímého posílání
+binárních dat komplikovanější.</p>
+
+<p>Z&nbsp;tohoto důvodu může být výhodnější binární data nejdříve nějakým
+způsobem zakódovat do sekvence binárních znaků, například s&nbsp;využitím <a
+href="https://cs.wikipedia.org/wiki/Base64">Base64</a>, který má tu výhodu, že
+algoritmus kódování/dekódování lze vytvořit velmi snadno (pokud již pro daný
+programovací jazyk neexistuje příslušná knihovna &ndash; většinou je již
+k&nbsp;dispozici). Nevýhodou jsou delší zprávy, které musí být v&nbsp;message
+brokerovi uloženy (ve frontách) a pomalejší posílání či příjem zpráv &ndash;
+pokud se ovšem zpracovávají relativně krátké zprávy s&nbsp;menší frekvencí
+(desítky za sekundu pro jednoho producenta), nemělo by být zpoždění vůbec
+patrné.</p>
+
+<p>Pro otestování posílání a příjmu zpráv s&nbsp;binárními daty vytvoříme
+producenta, který do fronty pošle data s&nbsp;rastrovým obrázkem. Samotný
+obrázek získáme snadno (jedná se o ikonu Vimu, v&nbsp;němž tento článek
+vznikl):</p>
+
+<pre>
+wget https://www.vim.org/images/vim_editor.gif
+</pre>
+
+<a href="https://www.root.cz/obrazek/353736/"><img src="https://i.iinfo.cz/images/529/amq2-1.gif" class="image-353736" alt="&#160;" width="125" height="60" /></a>
+<p><i>Obrázek 1: Ikona použitá jako příklad binárních dat.</i></p>
+
+
+
+<p><a name="k16"></a></p>
+<h2 id="k16">16. Producent binární zprávy</h2>
+
+<p>Na straně producenta (zdroje) zpráv jsou provedeny tyto operace:</p>
+
+<ol>
+
+<li>Načtení obsahu binárního souboru s&nbsp;rastrovým obrázkem.</li>
+
+<li>Převod na sekvenci čitelných znaků (podmnožina ASCII) pomocí Base64,
+konkrétně funkcí <strong>base64.b64encode()</strong>.</li>
+
+<li>Výsledek bude poslán do message brokera jako běžná zpráva.</li>
+
+</ol>
+
+<p>Realizace:</p>
+
+<pre>
+with open("vim_editor.gif", mode="rb") as file:
+    binaryData = file.read()
+    print("Read {l} bytes from binary file".format(l=len(binaryData)))
+&nbsp;
+    textData = base64.b64encode(binaryData)
+    conn.send(destination, textData, persistent='true')
+    print("Sent {l} characters".format(l=len(textData)))
+</pre>
+
+<p>Producent tedy může vypadat takto:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+import base64
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+MESSAGES = 10
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.start()
+conn.connect(login="admin", passcode="admin")
+&nbsp;
+&nbsp;
+with open("vim_editor.gif", mode="rb") as file:
+    binaryData = file.read()
+    print("Read {l} bytes from binary file".format(l=len(binaryData)))
+&nbsp;
+    textData = base64.b64encode(binaryData)
+    conn.send(destination, textData, persistent='true')
+    print("Sent {l} characters".format(l=len(textData)))
+&nbsp;
+&nbsp;
+conn.disconnect()
+</pre>
+
+<p>Povšimněte si, že délka zprávy (ve znacích) je větší, než počet načtených
+bajtů z&nbsp;binárního souboru:</p>
+
+<pre>
+Read 1091 bytes from binary file
+Sent 1456 characters
+</pre>
+
+<p>Pokud se nyní podíváme na fyzický tvar zprávy uložené do fronty přes webové
+rozhraní Active MQ, uvidíme, že zpráva byla skutečně převedena do BASE64:</p>
+
+<a href="https://www.root.cz/obrazek/353737/"><img src="https://i.iinfo.cz/images/529/amq2-2-prev.png" class="image-353737" alt="&#160;" width="370" height="232" /></a>
+<p><i>Obrázek 2: Takto vypadá zpráva uložená do fronty nazvané
+&bdquo;test&ldquo;. Vlastní obsah zprávy je červeně orámován.</i></p>
+
+
+
+<p><a name="k17"></a></p>
+<h2 id="k17">17. Konzument binární zprávy</h2>
+
+<p>Na straně konzumenta se provedou opačné kroky:</p>
+
+<ol>
+
+<li>Přečtení zprávy, o které víme, že používá kódování Base64.</li>
+
+<li>Zpětný převod na objekt typu <a
+href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>.</li>
+
+<li>Uložení získané sekvence bajtů do nového binárního souboru.</li>
+
+</ol>
+
+<p>Realizace:</p>
+
+<pre>
+    def <strong>on_message</strong>(self, headers, message):
+        binaryData = base64.b64decode(message)
+        print("Received {l} characters".format(l=len(message)))
+        print("   converted into {l} bytes".format(l=len(binaryData)))
+&nbsp;
+        with open("output.gif", "wb") as f:
+            f.write(binaryData)
+</pre>
+
+<p>Celý zdrojový kód producenta zpráv:</p>
+
+<pre>
+#!/usr/bin/env python
+&nbsp;
+import time
+import stomp
+import base64
+&nbsp;
+&nbsp;
+class SimpleListener:
+&nbsp;
+    def <strong>__init__</strong>(self, conn):
+        self.conn = conn
+&nbsp;
+    def <strong>on_message</strong>(self, headers, message):
+        binaryData = base64.b64decode(message)
+        print("Received {l} characters".format(l=len(message)))
+        print("   converted into {l} bytes".format(l=len(binaryData)))
+&nbsp;
+        with open("output.gif", "wb") as f:
+            f.write(binaryData)
+&nbsp;
+    def <strong>on_error</strong>(self, headers, message):
+        print("Received an error {e}".format(e=message))
+&nbsp;
+&nbsp;
+destination = "/queue/test"
+&nbsp;
+conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+conn.set_listener('', SimpleListener(conn))
+conn.start()
+&nbsp;
+conn.connect(login="admin", passcode="admin")
+conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+&nbsp;
+print("Waiting for messages...")
+&nbsp;
+while True:
+    time.sleep(10)
+</pre>
+
+<p>Po spuštění konzumenta by se měla zpráva načíst, převést na binární tvar a
+uložit do souboru &bdquo;output.gif&ldquo;:</p>
+
+<pre>
+Waiting for messages...
+Received 1456 characters
+   converted into 1091 bytes
+</pre>
+
+<p><div class="rs-tip-major">Poznámka: pokud porovnáte originální soubor
+&bdquo;vim_editor.gif&ldquo; s&nbsp;nově vytvořeným souborem
+&bdquo;output.gif&ldquo;, měly by mít tyto soubory naprosto stejný
+obsah:</div></p>
+
+<pre>
+$ <strong>cmp -l vim_editor.gif output.gif</strong>
+&nbsp;
+$ <strong>echo $?</strong>
+0
+</pre>
+
+
+
+<p><a name="k18"></a></p>
+<h2 id="k18">18. Repositář s&nbsp;demonstračními příklady</h2>
+
+<p>Zdrojové kódy všech dnes popsaných demonstračních příkladů naprogramovaných
+v&nbsp;Pythonu byly uloženy do Git repositáře, který je dostupný na adrese <a
+href="https://github.com/tisnik/message-queues-examples">https://github.com/tisnik/message-queues-examples</a>
+(stále na GitHubu :-). V&nbsp;případě, že nebudete chtít klonovat celý
+repositář (ten je ovšem &ndash; alespoň prozatím &ndash; velmi malý, dnes má
+doslova několik kilobajtů), můžete namísto toho použít odkazy na jednotlivé
+příklady, které naleznete v&nbsp;následující tabulce.</p>
+
+<table>
+<tr><th>Příklad</th><th>Skript/kód</th><th>Popis</th><th>Cesta</th></tr>
+<tr><td>1</td><td>publisher.py</td><td>zdroj zpráv posílaných se strategií PUB-SUB</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/publisher.py</a></td></tr>
+<tr><td>1</td><td>subscriber.py</td><td>příjemce zpráv posílaných se strategií PUB-SUB</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example01_publisher_listener/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>2</td><td>publisher.py</td><td>zdroj zpráv posílaných se strategií PUSH-PULL</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/publisher.py</a></td></tr>
+<tr><td>2</td><td>subscriber.py</td><td>příjemce zpráv posílaných se strategií PUSH-PULL</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example02_publisher_listener_queue/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>3</td><td>publisher.py</td><td>obdoba prvního příkladu, ovšem samotné připojení k&nbsp;message brokerovi se realizuje jednodušeji</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/publisher.py</a></td></tr>
+<tr><td>3</td><td>subscriber.py</td><td>obdoba prvního příkladu, ovšem samotné připojení k&nbsp;message brokerovi se realizuje jednodušeji</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example03_simple_connection_call/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>4</td><td>publisher.py</td><td>obdoba druhého příkladu, ovšem samotné připojení k&nbsp;message brokerovi se realizuje jednodušeji</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/publisher.py</a></td></tr>
+<tr><td>4</td><td>subscriber.py</td><td>obdoba druhého příkladu, ovšem samotné připojení k&nbsp;message brokerovi se realizuje jednodušeji</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example04_publisher_listener_queue_simple_connection_call/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>5</td><td>publisher.py</td><td>běžný producent zpráv</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example05_ack/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example05_ack/publisher.py</a></td></tr>
+<tr><td>5</td><td>subscriber.py</td><td>konzument zpráv potvrzujících jejich zpracování</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example05_ack/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example05_ack/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>6</td><td>publisher.py</td><td>běžný producent zpráv</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example06_nack/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example06_nack/publisher.py</a></td></tr>
+<tr><td>6</td><td>subscriber.py</td><td>konzument zpráv NEpotvrzujících jejich zpracování</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example06_nack/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example06_nack/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>7</td><td>publisher.py</td><td>producent zpráv, na konci vyšle zprávu &bdquo;exit&ldquo;</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/publisher.py</a></td></tr>
+<tr><td>7</td><td>subscriber.py</td><td>konzument zpráv s&nbsp;vlastní lokální frontou</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example07_queue/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>8</td><td>publisher.py</td><td>strategie PUB-SUB, transakce se nepoužívají</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/publisher.py</a></td></tr>
+<tr><td>8</td><td>subscriber.py</td><td>strategie PUB-SUB, transakce se nepoužívají</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example08_pub_sub_no_transactions/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>9</td><td>publisher.py</td><td>strategie PUB-SUB s&nbsp;využitím transakcí</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/publisher.py</a></td></tr>
+<tr><td>9</td><td>subscriber.py</td><td>strategie PUB-SUB s&nbsp;využitím transakcí</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example09_pub_sub_transactions/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>10</td><td>publisher.py</td><td>strategie PUSH-PULL, transakce se nepoužívají</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example10_push_pull_no_transactions/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example10_push_pull_no_transactions/publisher.py</a></td></tr>
+<tr><td>10</td><td>subscriber.py</td><td>strategie PUSH-PULL, transakce se nepoužívají</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example10_push_pull_no_transactions/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example10_push_pull_no_transactions/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>11</td><td>publisher.py</td><td>strategie PUSH-PULL s&nbsp;využitím transakcí</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example11_push_pull_transactions/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example11_push_pull_transactions/publisher.py</a></td></tr>
+<tr><td>11</td><td>subscriber.py</td><td>strategie PUSH-PULL s&nbsp;využitím transakcí</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example11_push_pull_transactions/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example11_push_pull_transactions/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>12</td><td>publisher.py</td><td>zrušení transakce</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example12_transaction_abort/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example12_transaction_abort/publisher.py</a></td></tr>
+<tr><td>12</td><td>subscriber.py</td><td>zrušení transakce</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example12_transaction_abort/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example12_transaction_abort/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>13</td><td>publisher.py</td><td>využití &bdquo;heartbeat&ldquo;</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example13_heartbeat/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example13_heartbeat/publisher.py</a></td></tr>
+<tr><td>13</td><td>subscriber.py</td><td>využití &bdquo;heartbeat&ldquo;</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example13_heartbeat/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example13_heartbeat/subscriber.py</a></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>14</td><td>publisher.py</td><td>producent zpráv s&nbsp;binárním obsahem</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/publisher.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/publisher.py</a></td></tr>
+<tr><td>14</td><td>subscriber.py</td><td>konzument zpráv s&nbsp;binárním obsahem</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/subscriber.py">https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/subscriber.py</a></td></tr>
+<tr><td>14</td><td>get_image</td><td>skript pro stažení testovacího rastrového obrázku</td><td><a href="https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/get_image">https://github.com/tisnik/message-queues-examples/blob/master/amq/example14_binary_messages/get_image</a></td></tr>
+</table>
+
+
+
+<p><div class="rs-tip-major">Poznámka: v&nbsp;tabulce jsou pro úplnost vypsány
+i dva příklady, s&nbsp;nimiž jsme se seznámili v&nbsp;předchozí části tohoto
+seriálu.</div></p>
+
+
+
+<p><a name="k19"></a></p>
+<h2 id="k19">19. Odkazy na předchozí části seriálu</h2>
+
+<p>V&nbsp;této kapitole jsou uvedeny odkazy na všech devět předchozích částí
+seriálu, v&nbsp;němž se zabýváme různými způsoby implementace front zpráv a
+k&nbsp;nim přidružených technologií:</p>
+
+<ol>
+
+<li>Použití nástroje RQ (Redis Queue) pro správu úloh zpracovávaných na pozadí<br />
+<a href="https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/">https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python/</a>
+</li>
+
+<li>Celery: systém implementující asynchronní fronty úloh pro Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/">https://www.root.cz/clanky/celery-system-implementujici-asynchronni-fronty-uloh-pro-python-dokonceni/</a>
+</li>
+
+<li>RabbitMQ: jedna z nejúspěšnějších implementací brokera<br />
+<a href="https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/">https://www.root.cz/clanky/rabbitmq-jedna-z-nejuspesnejsich-implementaci-brokera/</a>
+</li>
+
+<li>Pokročilejší operace nabízené systémem RabbitMQ<br />
+<a href="https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/">https://www.root.cz/clanky/pokrocilejsi-operace-nabizene-systemem-rabbitmq/</a>
+</li>
+
+<li>ØMQ: knihovna pro asynchronní předávání zpráv<br />
+<a href="https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/">https://www.root.cz/clanky/0mq-knihovna-pro-asynchronni-predavani-zprav/</a>
+</li>
+
+<li>Další možnosti poskytované knihovnou ØMQ<br />
+<a href="https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/">https://www.root.cz/clanky/dalsi-moznosti-poskytovane-knihovnou-mq/</a>
+</li>
+
+<li>Další možnosti nabízené knihovnou ØMQ, implementace protokolů ØMQ v čisté Javě<br />
+<a href="https://www.root.cz/clanky/dalsi-moznosti-nabizene-knihovnou-mq-implementace-protokolu-mq-v-ciste-jave/">https://www.root.cz/clanky/dalsi-moznosti-nabizene-knihovnou-mq-implementace-protokolu-mq-v-ciste-jave/</a>
+</li>
+
+<li>Apache ActiveMQ – další systém implementující message brokera<br />
+<a href="https://www.root.cz/clanky/apache-activemq-dalsi-system-implementujici-message-brokera/">https://www.root.cz/clanky/apache-activemq-dalsi-system-implementujici-message-brokera/</a>
+</li>
+
+</ol>
+
+
+
+<p><a name="k20"></a></p>
+<h2 id="k20">20. Odkazy na Internetu</h2>
+
+<ol>
+
+<li>Apache ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Apache ActiveMQ Artemis<br />
+<a href="https://activemq.apache.org/artemis/">https://activemq.apache.org/artemis/</a>
+</li>
+
+<li>Apache ActiveMQ Artemis User Manual<br />
+<a href="https://activemq.apache.org/artemis/docs/latest/index.html">https://activemq.apache.org/artemis/docs/latest/index.html</a>
+</li>
+
+<li>KahaDB<br />
+<a href="http://activemq.apache.org/kahadb.html">http://activemq.apache.org/kahadb.html</a>
+</li>
+
+<li>Understanding the KahaDB Message Store<br />
+<a href="https://access.redhat.com/documentation/en-US/Fuse_MQ_Enterprise/7.1/html/Configuring_Broker_Persistence/files/KahaDBOverview.html">https://access.redhat.com/documentation/en-US/Fuse_MQ_Enterprise/7.1/html/Configuring_Broker_Persistence/files/KahaDBOverview.html</a>
+</li>
+
+<li>Command Line Tools (Apache ActiveMQ)<br />
+<a href="https://activemq.apache.org/activemq-command-line-tools-reference.html">https://activemq.apache.org/activemq-command-line-tools-reference.html</a>
+</li>
+
+<li>stomp.py 4.1.21 na PyPi<br />
+<a href="https://pypi.org/project/stomp.py/">https://pypi.org/project/stomp.py/</a>
+</li>
+
+<li>Stomp Tutorial<br />
+<a href="https://access.redhat.com/documentation/en-US/Fuse_Message_Broker/5.5/html/Connectivity_Guide/files/FMBConnectivityStompTelnet.html">https://access.redhat.com/documentation/en-US/Fuse_Message_Broker/5.5/html/Connectivity_Guide/files/FMBConnectivityStompTelnet.html</a>
+</li>
+
+<li>Heartbeat (computing)<br />
+<a href="https://en.wikipedia.org/wiki/Heartbeat_(computing)">https://en.wikipedia.org/wiki/Heartbeat_(computing)</a>
+</li>
+
+<li>Apache Camel<br />
+<a href="https://camel.apache.org/">https://camel.apache.org/</a>
+</li>
+
+<li>Red Hat Fuse<br />
+<a href="https://developers.redhat.com/products/fuse/overview/">https://developers.redhat.com/products/fuse/overview/</a>
+</li>
+
+<li>Confusion between ActiveMQ and ActiveMQ-Artemis?<br />
+<a href="https://serverfault.com/questions/873533/confusion-between-activemq-and-activemq-artemis">https://serverfault.com/questions/873533/confusion-between-activemq-and-activemq-artemis</a>
+</li>
+
+<li>Staré stránky projektu HornetQ<br />
+<a href="http://hornetq.jboss.org/">http://hornetq.jboss.org/</a>
+</li>
+
+<li>Snapshot JeroMQ verze 0.4.4<br />
+<a href="https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/">https://oss.sonatype.org/content/repositories/snapshots/org/zeromq/jeromq/0.4.4-SNAPSHOT/</a>
+</li>
+
+<li>Difference between ActiveMQ vs Apache ActiveMQ Artemis<br />
+<a href="http://activemq.2283324.n4.nabble.com/Difference-between-ActiveMQ-vs-Apache-ActiveMQ-Artemis-td4703828.html">http://activemq.2283324.n4.nabble.com/Difference-between-ActiveMQ-vs-Apache-ActiveMQ-Artemis-td4703828.html</a>
+</li>
+
+<li>Microservices communications. Why you should switch to message queues<br />
+<a href="https://dev.to/matteojoliveau/microservices-communications-why-you-should-switch-to-message-queues--48ia">https://dev.to/matteojoliveau/microservices-communications-why-you-should-switch-to-message-queues--48ia</a>
+</li>
+
+<li>Stomp.py 4.1.19 documentation<br />
+<a href="https://stomppy.readthedocs.io/en/stable/">https://stomppy.readthedocs.io/en/stable/</a>
+</li>
+
+<li>Repositář knihovny JeroMQ<br />
+<a href="https://github.com/zeromq/jeromq/">https://github.com/zeromq/jeromq/</a>
+</li>
+
+<li>ØMQ &ndash; Distributed Messaging <br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ØMQ Community<br />
+<a href="http://zeromq.org/community">http://zeromq.org/community</a>
+</li>
+
+<li>Get The Software<br />
+<a href="http://zeromq.org/intro:get-the-software">http://zeromq.org/intro:get-the-software</a>
+</li>
+
+<li>PyZMQ Documentation<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/">https://pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Module: zmq.decorators<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html">https://pyzmq.readthedocs.io/en/latest/api/zmq.decorators.html</a>
+</li>
+
+<li>ZeroMQ is the answer, by Ian Barber<br />
+<a href="https://vimeo.com/20605470">https://vimeo.com/20605470</a>
+</li>
+
+<li>ZeroMQ RFC<br />
+<a href="https://rfc.zeromq.org/">https://rfc.zeromq.org/</a>
+</li>
+
+<li>ZeroMQ and Clojure, a brief introduction<br />
+<a href="https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/">https://antoniogarrote.wordpress.com/2010/09/08/zeromq-and-clojure-a-brief-introduction/</a>
+</li>
+
+<li>zeromq/czmq<br />
+<a href="https://github.com/zeromq/czmq">https://github.com/zeromq/czmq</a>
+</li>
+
+<li>golang wrapper for CZMQ<br />
+<a href="https://github.com/zeromq/goczmq">https://github.com/zeromq/goczmq</a>
+</li>
+
+<li>ZeroMQ version reporting in Python<br />
+<a href="http://zguide.zeromq.org/py:version">http://zguide.zeromq.org/py:version</a>
+</li>
+
+<li>A Go interface to ZeroMQ version 4<br />
+<a href="https://github.com/pebbe/zmq4">https://github.com/pebbe/zmq4</a>
+</li>
+
+<li>Broker vs. Brokerless<br />
+<a href="http://zeromq.org/whitepapers:brokerless">http://zeromq.org/whitepapers:brokerless</a>
+</li>
+
+<li>Learning ØMQ with pyzmq<br />
+<a href="https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/">https://learning-0mq-with-pyzmq.readthedocs.io/en/latest/</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_new</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-new">http://api.zeromq.org/4-2:zmq-ctx-new</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_ctx_destroy</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-ctx-destroy">http://api.zeromq.org/4-2:zmq-ctx-destroy</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_bind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-bind">http://api.zeromq.org/4-2:zmq-bind</a>
+</li>
+
+<li>Céčková funkce <strong>zmq_unbind</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-unbind">http://api.zeromq.org/4-2:zmq-unbind</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_connect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-connect">http://api.zeromq.org/4-2:zmq-connect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_disconnect</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-disconnect">http://api.zeromq.org/4-2:zmq-disconnect</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_send</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-send">http://api.zeromq.org/4-2:zmq-send</a>
+</li>
+
+<li>Céčková C funkce <strong>zmq_recv</strong><br />
+<a href="http://api.zeromq.org/4-2:zmq-recv">http://api.zeromq.org/4-2:zmq-recv</a>
+</li>
+
+<li>Třída <strong>Context</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#context</a>
+</li>
+
+<li>Třída <strong>Socket</strong> (Python)<br />
+<a href="https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket">https://pyzmq.readthedocs.io/en/latest/api/zmq.html#socket</a>
+</li>
+
+<li>Python binding<br />
+<a href="http://zeromq.org/bindings:python">http://zeromq.org/bindings:python</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part I)<br />
+<a href="http://250bpm.com/blog:4">http://250bpm.com/blog:4</a>
+</li>
+
+<li>Why should I have written ZeroMQ in C, not C++ (part II) <br />
+<a href="http://250bpm.com/blog:8">http://250bpm.com/blog:8</a>
+</li>
+
+<li>About Nanomsg<br />
+<a href="https://nanomsg.org/">https://nanomsg.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol<br />
+<a href="https://www.amqp.org/">https://www.amqp.org/</a>
+</li>
+
+<li>Advanced Message Queuing Protocol na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol">https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol</a>
+</li>
+
+<li>Dokumentace k&nbsp;příkazu <strong>rabbitmqctl</strong><br />
+<a href="https://www.rabbitmq.com/rabbitmqctl.8.html">https://www.rabbitmq.com/rabbitmqctl.8.html</a>
+</li>
+
+<li>RabbitMQ<br />
+<a href="https://www.rabbitmq.com/">https://www.rabbitmq.com/</a>
+</li>
+
+<li>RabbitMQ Tutorials<br />
+<a href="https://www.rabbitmq.com/getstarted.html">https://www.rabbitmq.com/getstarted.html</a>
+</li>
+
+<li>RabbitMQ: Clients and Developer Tools<br />
+<a href="https://www.rabbitmq.com/devtools.html">https://www.rabbitmq.com/devtools.html</a>
+</li>
+
+<li>RabbitMQ na Wikipedii<br />
+<a href="https://en.wikipedia.org/wiki/RabbitMQ">https://en.wikipedia.org/wiki/RabbitMQ</a>
+</li>
+
+<li>Streaming Text Oriented Messaging Protocol<br />
+<a href="https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol">https://en.wikipedia.org/wiki/Streaming_Text_Oriented_Messaging_Protocol</a>
+</li>
+
+<li>Message Queuing Telemetry Transport<br />
+<a href="https://en.wikipedia.org/wiki/MQTT">https://en.wikipedia.org/wiki/MQTT</a>
+</li>
+
+<li>Erlang<br />
+<a href="http://www.erlang.org/">http://www.erlang.org/</a>
+</li>
+
+<li>pika 0.12.0 na PyPi<br />
+<a href="https://pypi.org/project/pika/">https://pypi.org/project/pika/</a>
+</li>
+
+<li>Introduction to Pika<br />
+<a href="https://pika.readthedocs.io/en/stable/">https://pika.readthedocs.io/en/stable/</a>
+</li>
+
+<li>Langohr: An idiomatic Clojure client for RabbitMQ that embraces the AMQP 0.9.1 model<br />
+<a href="http://clojurerabbitmq.info/">http://clojurerabbitmq.info/</a>
+</li>
+
+<li>AMQP 0-9-1 Model Explained<br />
+<a href="http://www.rabbitmq.com/tutorials/amqp-concepts.html">http://www.rabbitmq.com/tutorials/amqp-concepts.html</a>
+</li>
+
+<li>Part 1: RabbitMQ for beginners - What is RabbitMQ?<br />
+<a href="https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html">https://www.cloudamqp.com/blog/2015-05-18-part1-rabbitmq-for-beginners-what-is-rabbitmq.html</a>
+</li>
+
+<li>Downloading and Installing RabbitMQ<br />
+<a href="https://www.rabbitmq.com/download.html">https://www.rabbitmq.com/download.html</a>
+</li>
+
+<li>celery na PyPi<br />
+<a href="https://pypi.org/project/celery/">https://pypi.org/project/celery/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python <br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python/</a>
+</li>
+
+<li>Databáze Redis (nejenom) pro vývojáře používající Python (dokončení)<br />
+<a href="https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/">https://www.root.cz/clanky/databaze-redis-nejenom-pro-vyvojare-pouzivajici-python-dokonceni/</a>
+</li>
+
+<li>Redis Queue (RQ)<br />
+<a href="https://www.fullstackpython.com/redis-queue-rq.html">https://www.fullstackpython.com/redis-queue-rq.html</a>
+</li>
+
+<li>Python Celery &amp; RabbitMQ Tutorial<br />
+<a href="https://tests4geeks.com/python-celery-rabbitmq-tutorial/">https://tests4geeks.com/python-celery-rabbitmq-tutorial/</a>
+</li>
+
+<li>Flower: Real-time Celery web-monitor<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor">http://docs.celeryproject.org/en/latest/userguide/monitoring.html#flower-real-time-celery-web-monitor</a>
+</li>
+
+<li>Asynchronous Tasks With Django and Celery<br />
+<a href="https://realpython.com/asynchronous-tasks-with-django-and-celery/">https://realpython.com/asynchronous-tasks-with-django-and-celery/</a>
+</li>
+
+<li>First Steps with Celery<br />
+<a href="http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html">http://docs.celeryproject.org/en/latest/getting-started/first-steps-with-celery.html</a>
+</li>
+
+<li>node-celery<br />
+<a href="https://github.com/mher/node-celery">https://github.com/mher/node-celery</a>
+</li>
+
+<li>Full Stack Python: web development<br />
+<a href="https://www.fullstackpython.com/web-development.html">https://www.fullstackpython.com/web-development.html</a>
+</li>
+
+<li>Introducing RQ<br />
+<a href="https://nvie.com/posts/introducing-rq/">https://nvie.com/posts/introducing-rq/</a>
+</li>
+
+<li>Asynchronous Tasks with Flask and Redis Queue<br />
+<a href="https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue">https://testdriven.io/asynchronous-tasks-with-flask-and-redis-queue</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Stránky projektu Redis<br />
+<a href="https://redis.io/">https://redis.io/</a>
+</li>
+
+<li>Introduction to Redis<br />
+<a href="https://redis.io/topics/introduction">https://redis.io/topics/introduction</a>
+</li>
+
+<li>Try Redis<br />
+<a href="http://try.redis.io/">http://try.redis.io/</a>
+</li>
+
+<li>Redis tutorial, April 2010 (starší, ale pěkně udělaný)<br />
+<a href="https://static.simonwillison.net/static/2010/redis-tutorial/">https://static.simonwillison.net/static/2010/redis-tutorial/</a>
+</li>
+
+<li>Python Redis<br />
+<a href="https://redislabs.com/lp/python-redis/">https://redislabs.com/lp/python-redis/</a>
+</li>
+
+<li>Redis: key-value databáze v paměti i na disku<br />
+<a href="https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/">https://www.zdrojak.cz/clanky/redis-key-value-databaze-v-pameti-i-na-disku/</a>
+</li>
+
+<li>Praktický úvod do Redis (1): vaše distribuovaná NoSQL cache<br />
+<a href="http://www.cloudsvet.cz/?p=253">http://www.cloudsvet.cz/?p=253</a>
+</li>
+
+<li>Praktický úvod do Redis (2): transakce<br />
+<a href="http://www.cloudsvet.cz/?p=256">http://www.cloudsvet.cz/?p=256</a>
+</li>
+
+<li>Praktický úvod do Redis (3): cluster<br />
+<a href="http://www.cloudsvet.cz/?p=258">http://www.cloudsvet.cz/?p=258</a>
+</li>
+
+<li>Connection pool<br />
+<a href="https://en.wikipedia.org/wiki/Connection_pool">https://en.wikipedia.org/wiki/Connection_pool</a>
+</li>
+
+<li>Instant Redis Sentinel Setup<br />
+<a href="https://github.com/ServiceStack/redis-config">https://github.com/ServiceStack/redis-config</a>
+</li>
+
+<li>How to install REDIS in LInux<br />
+<a href="https://linuxtechlab.com/how-install-redis-server-linux/">https://linuxtechlab.com/how-install-redis-server-linux/</a>
+</li>
+
+<li>Redis RDB Dump File Format<br />
+<a href="https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format">https://github.com/sripathikrishnan/redis-rdb-tools/wiki/Redis-RDB-Dump-File-Format</a>
+</li>
+
+<li>Lempel–Ziv–Welch<br />
+<a href="https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch">https://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch</a>
+</li>
+
+<li>Redis Persistence<br />
+<a href="https://redis.io/topics/persistence">https://redis.io/topics/persistence</a>
+</li>
+
+<li>Redis persistence demystified<br />
+<a href="http://oldblog.antirez.com/post/redis-persistence-demystified.html">http://oldblog.antirez.com/post/redis-persistence-demystified.html</a>
+</li>
+
+<li>Redis reliable queues with Lua scripting<br />
+<a href="http://oldblog.antirez.com/post/250">http://oldblog.antirez.com/post/250</a>
+</li>
+
+<li>Ost (knihovna)<br />
+<a href="https://github.com/soveran/ost">https://github.com/soveran/ost</a>
+</li>
+
+<li>NoSQL<br />
+<a href="https://en.wikipedia.org/wiki/NoSQL">https://en.wikipedia.org/wiki/NoSQL</a>
+</li>
+
+<li>Shard (database architecture)<br />
+<a href="https://en.wikipedia.org/wiki/Shard_%28database_architecture%29">https://en.wikipedia.org/wiki/Shard_%28database_architecture%29</a>
+</li>
+
+<li>What is sharding and why is it important?<br />
+<a href="https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important">https://stackoverflow.com/questions/992988/what-is-sharding-and-why-is-it-important</a>
+</li>
+
+<li>What Is Sharding?<br />
+<a href="https://btcmanager.com/what-sharding/">https://btcmanager.com/what-sharding/</a>
+</li>
+
+<li>Redis clients<br />
+<a href="https://redis.io/clients">https://redis.io/clients</a>
+</li>
+
+<li>Category:Lua-scriptable software<br />
+<a href="https://en.wikipedia.org/wiki/Category:Lua-scriptable_software">https://en.wikipedia.org/wiki/Category:Lua-scriptable_software</a>
+</li>
+
+<li>Seriál Programovací jazyk Lua<br />
+<a href="https://www.root.cz/serialy/programovaci-jazyk-lua/">https://www.root.cz/serialy/programovaci-jazyk-lua/</a>
+</li>
+
+<li>Redis memory usage<br />
+<a href="http://nosql.mypopescu.com/post/1010844204/redis-memory-usage">http://nosql.mypopescu.com/post/1010844204/redis-memory-usage</a>
+</li>
+
+<li>Ukázka konfigurace Redisu pro lokální testování<br />
+<a href="https://github.com/tisnik/presentations/blob/master/redis/redis.conf">https://github.com/tisnik/presentations/blob/master/redis/redis.conf</a>
+</li>
+
+<li>Resque<br />
+<a href="https://github.com/resque/resque">https://github.com/resque/resque</a>
+</li>
+
+<li>Nested transaction<br />
+<a href="https://en.wikipedia.org/wiki/Nested_transaction">https://en.wikipedia.org/wiki/Nested_transaction</a>
+</li>
+
+<li>Publish–subscribe pattern<br />
+<a href="https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern">https://en.wikipedia.org/wiki/Publish%E2%80%93subscribe_pattern</a>
+</li>
+
+<li>Messaging pattern<br />
+<a href="https://en.wikipedia.org/wiki/Messaging_pattern">https://en.wikipedia.org/wiki/Messaging_pattern</a>
+</li>
+
+<li>Using pipelining to speedup Redis queries<br />
+<a href="https://redis.io/topics/pipelining">https://redis.io/topics/pipelining</a>
+</li>
+
+<li>Pub/Sub<br />
+<a href="https://redis.io/topics/pubsub">https://redis.io/topics/pubsub</a>
+</li>
+
+<li>ZeroMQ distributed messaging<br />
+<a href="http://zeromq.org/">http://zeromq.org/</a>
+</li>
+
+<li>ZeroMQ: Modern &amp; Fast Networking Stack<br />
+<a href="https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/">https://www.igvita.com/2010/09/03/zeromq-modern-fast-networking-stack/</a>
+</li>
+
+<li>Publish/Subscribe paradigm: Why must message classes not know about their subscribers?<br />
+<a href="https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr">https://stackoverflow.com/questions/2908872/publish-subscribe-paradigm-why-must-message-classes-not-know-about-their-subscr</a>
+</li>
+
+<li>Python &amp; Redis PUB/SUB<br />
+<a href="https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7">https://medium.com/@johngrant/python-redis-pub-sub-6e26b483b3f7</a>
+</li>
+
+<li>Message broker<br />
+<a href="https://en.wikipedia.org/wiki/Message_broker">https://en.wikipedia.org/wiki/Message_broker</a>
+</li>
+
+<li>RESP Arrays<br />
+<a href="https://redis.io/topics/protocol#array-reply">https://redis.io/topics/protocol#array-reply</a>
+</li>
+
+<li>Redis Protocol specification<br />
+<a href="https://redis.io/topics/protocol">https://redis.io/topics/protocol</a>
+</li>
+
+<li>Redis Pub/Sub: Intro Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-intro/">https://www.redisgreen.net/blog/pubsub-intro/</a>
+</li>
+
+<li>Redis Pub/Sub: Howto Guide<br />
+<a href="https://www.redisgreen.net/blog/pubsub-howto/">https://www.redisgreen.net/blog/pubsub-howto/</a>
+</li>
+
+<li>Comparing Publish-Subscribe Messaging and Message Queuing<br />
+<a href="https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message">https://dzone.com/articles/comparing-publish-subscribe-messaging-and-message</a>
+</li>
+
+<li>Apache Kafka<br />
+<a href="https://kafka.apache.org/">https://kafka.apache.org/</a>
+</li>
+
+<li>Iron<br />
+<a href="http://www.iron.io/mq">http://www.iron.io/mq</a>
+</li>
+
+<li>kue (založeno na Redisu, určeno pro node.js)<br />
+<a href="https://github.com/Automattic/kue">https://github.com/Automattic/kue</a>
+</li>
+
+<li>Cloud Pub/Sub<br />
+<a href="https://cloud.google.com/pubsub/">https://cloud.google.com/pubsub/</a>
+</li>
+
+<li>Introduction to Redis Streams<br />
+<a href="https://redis.io/topics/streams-intro">https://redis.io/topics/streams-intro</a>
+</li>
+
+<li>glob (programming)<br />
+<a href="https://en.wikipedia.org/wiki/Glob_(programming)">https://en.wikipedia.org/wiki/Glob_(programming)</a>
+</li>
+
+<li>Why and how Pricing Assistant migrated from Celery to RQ - Paris.py<br />
+<a href="https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2">https://www.slideshare.net/sylvinus/why-and-how-pricing-assistant-migrated-from-celery-to-rq-parispy-2</a>
+</li>
+
+<li>Enqueueing internals<br />
+<a href="http://python-rq.org/contrib/">http://python-rq.org/contrib/</a>
+</li>
+
+<li>queue — A synchronized queue class<br />
+<a href="https://docs.python.org/3/library/queue.html">https://docs.python.org/3/library/queue.html</a>
+</li>
+
+<li>Queue – A thread-safe FIFO implementation<br />
+<a href="https://pymotw.com/2/Queue/">https://pymotw.com/2/Queue/</a>
+</li>
+
+<li>Queues<br />
+<a href="http://queues.io/">http://queues.io/</a>
+</li>
+
+<li>Windows Subsystem for Linux Documentation<br />
+<a href="https://docs.microsoft.com/en-us/windows/wsl/about">https://docs.microsoft.com/en-us/windows/wsl/about</a>
+</li>
+
+<li>RestMQ<br />
+<a href="http://restmq.com/">http://restmq.com/</a>
+</li>
+
+<li>ActiveMQ<br />
+<a href="http://activemq.apache.org/">http://activemq.apache.org/</a>
+</li>
+
+<li>Amazon MQ<br />
+<a href="https://aws.amazon.com/amazon-mq/">https://aws.amazon.com/amazon-mq/</a>
+</li>
+
+<li>Amazon Simple Queue Service<br />
+<a href="https://aws.amazon.com/sqs/">https://aws.amazon.com/sqs/</a>
+</li>
+
+<li>Celery: Distributed Task Queue<br />
+<a href="http://www.celeryproject.org/">http://www.celeryproject.org/</a>
+</li>
+
+<li>Disque, an in-memory, distributed job queue<br />
+<a href="https://github.com/antirez/disque">https://github.com/antirez/disque</a>
+</li>
+
+<li>rq-dashboard<br />
+<a href="https://github.com/eoranged/rq-dashboard">https://github.com/eoranged/rq-dashboard</a>
+</li>
+
+<li>Projekt RQ na PyPi<br />
+<a href="https://pypi.org/project/rq/">https://pypi.org/project/rq/</a>
+</li>
+
+<li>rq-dashboard 0.3.12<br />
+<a href="https://pypi.org/project/rq-dashboard/">https://pypi.org/project/rq-dashboard/</a>
+</li>
+
+<li>Job queue<br />
+<a href="https://en.wikipedia.org/wiki/Job_queue">https://en.wikipedia.org/wiki/Job_queue</a>
+</li>
+
+<li>Why we moved from Celery to RQ<br />
+<a href="https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq">https://frappe.io/blog/technology/why-we-moved-from-celery-to-rq</a>
+</li>
+
+<li>Running multiple workers using Celery<br />
+<a href="https://serverfault.com/questions/655387/running-multiple-workers-using-celery">https://serverfault.com/questions/655387/running-multiple-workers-using-celery</a>
+</li>
+
+<li>celery — Distributed processing<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.html">http://docs.celeryproject.org/en/latest/reference/celery.html</a>
+</li>
+
+<li>Chains<br />
+<a href="https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains">https://celery.readthedocs.io/en/latest/userguide/canvas.html#chains</a>
+</li>
+
+<li>Routing<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing">http://docs.celeryproject.org/en/latest/userguide/routing.html#automatic-routing</a>
+</li>
+
+<li>Celery Distributed Task Queue in Go<br />
+<a href="https://github.com/gocelery/gocelery/">https://github.com/gocelery/gocelery/</a>
+</li>
+
+<li>Python Decorators<br />
+<a href="https://wiki.python.org/moin/PythonDecorators">https://wiki.python.org/moin/PythonDecorators</a>
+</li>
+
+<li>Periodic Tasks<br />
+<a href="http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html">http://docs.celeryproject.org/en/latest/userguide/periodic-tasks.html</a>
+</li>
+
+<li>celery.schedules<br />
+<a href="http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab">http://docs.celeryproject.org/en/latest/reference/celery.schedules.html#celery.schedules.crontab</a>
+</li>
+
+<li>Pros and cons to use Celery vs. RQ<br />
+<a href="https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq">https://stackoverflow.com/questions/13440875/pros-and-cons-to-use-celery-vs-rq</a>
+</li>
+
+<li>Priority queue<br />
+<a href="https://en.wikipedia.org/wiki/Priority_queue">https://en.wikipedia.org/wiki/Priority_queue</a>
+</li>
+
+<li>Jupyter<br />
+<a href="https://jupyter.org/">https://jupyter.org/</a>
+</li>
+
+<li>How IPython and Jupyter Notebook work<br />
+<a href="https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html">https://jupyter.readthedocs.io/en/latest/architecture/how_jupyter_ipython_work.html</a>
+</li>
+
+<li>Context Managers<br />
+<a href="http://book.pythontips.com/en/latest/context_managers.html">http://book.pythontips.com/en/latest/context_managers.html</a>
+</li>
+
+</ol>
+
+
+
+<p></p><p></p>
+<p><small>Autor: <a href="http://www.fit.vutbr.cz/~tisnovpa">Pavel Tišnovský</a> &nbsp; 2019</small></p>
+</body>
+</html>
+
