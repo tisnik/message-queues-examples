@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from celery import Celery
 
 app = Celery('tasks')
