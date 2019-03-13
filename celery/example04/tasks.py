@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from time import sleep
 from celery import Celery
 

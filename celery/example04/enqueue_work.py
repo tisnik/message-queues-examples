@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from tasks import add
 
 async_tasks = []
