@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from tasks import add, multiply
 
 for i in range(10):
