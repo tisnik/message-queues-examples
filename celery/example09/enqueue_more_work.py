@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from tasks import red_task, green_task, blue_task
 
 for _ in range(25):
