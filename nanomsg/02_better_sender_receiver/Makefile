@@ -28,9 +28,7 @@ clean:
 	rm -f receiver
 
 run_sender:
-	export LD_LIBRARY_PATH=$(LIBRARY_PATH)
-	./sender
+	LD_LIBRARY_PATH=$(LIBRARY_PATH) ./sender
 
 run_receiver:
-	export LD_LIBRARY_PATH=$(LIBRARY_PATH)
-	./receiver
+	LD_LIBRARY_PATH=$(LIBRARY_PATH) ./receiver
