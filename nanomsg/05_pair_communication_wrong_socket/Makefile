@@ -28,9 +28,7 @@ clean:
 	rm -f second
 
 run_first:
-	export LD_LIBRARY_PATH=$(LIBRARY_PATH)
-	./first
+	LD_LIBRARY_PATH=$(LIBRARY_PATH) ./first
 
 run_second:
-	export LD_LIBRARY_PATH=$(LIBRARY_PATH)
-	./second
+	LD_LIBRARY_PATH=$(LIBRARY_PATH) ./second
