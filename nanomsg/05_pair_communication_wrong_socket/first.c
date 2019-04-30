@@ -25,7 +25,7 @@ void send_message(const int socket, const char *message)
     sleep(1);
 }
 
-void receive_response(socket)
+void receive_response(const int socket)
 {
     char *response = NULL;
     int bytes;

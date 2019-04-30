@@ -13,7 +13,7 @@ void report_error(const char *func)
     exit(1);
 }
 
-void receive_message(socket)
+void receive_message(const int socket)
 {
     char *message = NULL;
     int bytes;
