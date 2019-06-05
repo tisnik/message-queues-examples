@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: set fileencoding=utf-8
 
 from sys import exit, argv
 from time import sleep
