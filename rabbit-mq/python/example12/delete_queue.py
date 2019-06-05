@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# vim: set fileencoding=utf-8
+
 from sys import argv, exit
 from rabbitmq_connect import connect
 
