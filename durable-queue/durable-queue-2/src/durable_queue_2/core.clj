@@ -9,6 +9,7 @@
   (let [q (queues "/tmp" {})]
        (pprint (stats q))
        (put! q :queue-1 "task #A")
+       (pprint (stats q))
        (put! q :queue-1 "task #B")
        (pprint (stats q))
        (-> (take! q :queue-1) println)
