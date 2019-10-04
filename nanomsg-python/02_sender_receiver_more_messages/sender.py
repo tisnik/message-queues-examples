@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from nanomsg import Socket, PUSH
 from time import sleep
 
