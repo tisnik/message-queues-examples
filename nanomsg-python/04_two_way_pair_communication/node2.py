@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8
+
 from nanomsg import Socket, PAIR
 
 URL = "ipc:///tmp/example4"
