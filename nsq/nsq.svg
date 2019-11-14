@@ -1,0 +1,863 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="75cm" height="60cm" viewBox="78 99 1483 1200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #f2f4c0" x="1260" y="860" width="300" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1260" y="860" width="300" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1410" y="953.9">
+      <tspan x="1410" y="953.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="80" y="260" width="160" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="80" y="260" width="160" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="353.9">
+      <tspan x="160" y="353.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="120" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="120" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="128.74" y="108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="130.925,160.508 172.441,160.508 172.441,169.921 133.11,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="130.925,160.508 172.441,160.508 172.441,169.921 133.11,169.921 "/>
+    <polygon style="fill: #b3b3b3" points="172.441,160.508 189.753,160.508 187.568,169.921 172.441,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="172.441,160.508 189.753,160.508 187.568,169.921 172.441,169.921 "/>
+    <rect style="fill: #f57b1e" x="175.264" y="163.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="175.264" y="163.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="152.271,169.921 168.407,169.921 168.407,174.627 176.475,174.627 176.475,179.333 144.203,179.333 144.203,174.627 152.271,174.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="152.271,169.921 168.407,169.921 168.407,174.627 176.475,174.627 176.475,179.333 144.203,179.333 144.203,174.627 152.271,174.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="160.339" y="194.023">
+      <tspan x="160.339" y="194.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="120" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="120" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="128.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="130.925,560.508 172.441,560.508 172.441,569.921 133.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="130.925,560.508 172.441,560.508 172.441,569.921 133.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="172.441,560.508 189.753,560.508 187.568,569.921 172.441,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="172.441,560.508 189.753,560.508 187.568,569.921 172.441,569.921 "/>
+    <rect style="fill: #f57b1e" x="175.264" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="175.264" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="152.271,569.921 168.407,569.921 168.407,574.627 176.475,574.627 176.475,579.333 144.203,579.333 144.203,574.627 152.271,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="152.271,569.921 168.407,569.921 168.407,574.627 176.475,574.627 176.475,579.333 144.203,579.333 144.203,574.627 152.271,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="160.339" y="594.023">
+      <tspan x="160.339" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 120 380 L 200,380 C 211.046,380 220,388.954 220,400 C 220,411.046 211.046,420 200,420 L 120,420 C 108.954,420 100,411.046 100,400 C 100,388.954 108.954,380 120,380z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 120 380 L 200,380 C 211.046,380 220,388.954 220,400 C 220,411.046 211.046,420 200,420 L 120,420 C 108.954,420 100,411.046 100,400 C 100,388.954 108.954,380 120,380"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="160" y="404">
+      <tspan x="160" y="404">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="110.559,300 211.032,300 196.474,340 96,340 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="110.559,300 211.032,300 196.474,340 96,340 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="153.516" y="323.9">
+      <tspan x="153.516" y="323.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="160" y1="200" x2="160.718" y2="290.264"/>
+    <polygon style="fill: #000000" points="160.778,297.764 155.698,287.804 160.718,290.264 165.698,287.725 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="160.778,297.764 155.698,287.804 160.718,290.264 165.698,287.725 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="160" y1="420" x2="160.198" y2="489.774"/>
+    <polygon style="fill: #000000" points="160.219,497.274 155.191,487.288 160.198,489.774 165.191,487.26 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="160.219,497.274 155.191,487.288 160.198,489.774 165.191,487.26 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="146.237,340 146.237,360 160,360 160,370.264 "/>
+    <polygon style="fill: #000000" points="160,377.764 155,367.764 160,370.264 165,367.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="160,377.764 155,367.764 160,370.264 165,367.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="360" y="260" width="160" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="360" y="260" width="160" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="440" y="353.9">
+      <tspan x="440" y="353.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="400" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="400" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="408.74" y="108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="410.925,160.508 452.441,160.508 452.441,169.921 413.11,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="410.925,160.508 452.441,160.508 452.441,169.921 413.11,169.921 "/>
+    <polygon style="fill: #b3b3b3" points="452.441,160.508 469.753,160.508 467.568,169.921 452.441,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="452.441,160.508 469.753,160.508 467.568,169.921 452.441,169.921 "/>
+    <rect style="fill: #f57b1e" x="455.264" y="163.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="455.264" y="163.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="432.271,169.921 448.407,169.921 448.407,174.627 456.475,174.627 456.475,179.333 424.203,179.333 424.203,174.627 432.271,174.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="432.271,169.921 448.407,169.921 448.407,174.627 456.475,174.627 456.475,179.333 424.203,179.333 424.203,174.627 432.271,174.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="440.339" y="194.023">
+      <tspan x="440.339" y="194.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="400" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="400" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="408.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="410.925,560.508 452.441,560.508 452.441,569.921 413.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="410.925,560.508 452.441,560.508 452.441,569.921 413.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="452.441,560.508 469.753,560.508 467.568,569.921 452.441,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="452.441,560.508 469.753,560.508 467.568,569.921 452.441,569.921 "/>
+    <rect style="fill: #f57b1e" x="455.264" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="455.264" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="432.271,569.921 448.407,569.921 448.407,574.627 456.475,574.627 456.475,579.333 424.203,579.333 424.203,574.627 432.271,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="432.271,569.921 448.407,569.921 448.407,574.627 456.475,574.627 456.475,579.333 424.203,579.333 424.203,574.627 432.271,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="440.339" y="594.023">
+      <tspan x="440.339" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 400 380 L 480,380 C 491.046,380 500,388.954 500,400 C 500,411.046 491.046,420 480,420 L 400,420 C 388.954,420 380,411.046 380,400 C 380,388.954 388.954,380 400,380z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 400 380 L 480,380 C 491.046,380 500,388.954 500,400 C 500,411.046 491.046,420 480,420 L 400,420 C 388.954,420 380,411.046 380,400 C 380,388.954 388.954,380 400,380"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="440" y="404">
+      <tspan x="440" y="404">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="390.559,300 491.032,300 476.474,340 376,340 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="390.559,300 491.032,300 476.474,340 376,340 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="433.516" y="323.9">
+      <tspan x="433.516" y="323.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="440" y1="200" x2="440.719" y2="290.264"/>
+    <polygon style="fill: #000000" points="440.778,297.764 435.699,287.804 440.719,290.264 445.698,287.725 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="440.778,297.764 435.699,287.804 440.719,290.264 445.698,287.725 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="440" y1="420" x2="440.198" y2="489.774"/>
+    <polygon style="fill: #000000" points="440.219,497.274 435.191,487.288 440.198,489.774 445.191,487.26 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="440.219,497.274 435.191,487.288 440.198,489.774 445.191,487.26 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="426.237,340 426.237,360 440,360 440,370.264 "/>
+    <polygon style="fill: #000000" points="440,377.764 435,367.764 440,370.264 445,367.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="440,377.764 435,367.764 440,370.264 445,367.764 "/>
+  </g>
+  <g>
+    <path style="fill: #f57b1e" d="M 540 432.667 C 556,423.167 564,420 580,420 C 596,420 604,423.167 620,432.667 L 620,483.333 C 604,492.833 596,496 580,496 C 564,496 556,492.833 540,483.333 L 540,432.667z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 540 432.667 C 556,423.167 564,420 580,420 C 596,420 604,423.167 620,432.667 L 620,483.333 C 604,492.833 596,496 580,496 C 564,496 556,492.833 540,483.333 L 540,432.667"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 540 432.667 C 556,442.167 564,445.333 580,445.333 C 596,445.333 604,442.167 620,432.667"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="580" y="460.333">
+      <tspan x="580" y="460.333">Persistentí</tspan>
+      <tspan x="580" y="476.333">zprávy</tspan>
+    </text>
+  </g>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="580" y1="420" x2="580" y2="400"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="500" y1="400" x2="580" y2="400"/>
+  <g>
+    <rect style="fill: #f2f4c0" x="760" y="260" width="160" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="760" y="260" width="160" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="840" y="353.9">
+      <tspan x="840" y="353.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="840" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="840" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="848.74" y="108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="850.925,160.508 892.441,160.508 892.441,169.921 853.11,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="850.925,160.508 892.441,160.508 892.441,169.921 853.11,169.921 "/>
+    <polygon style="fill: #b3b3b3" points="892.441,160.508 909.753,160.508 907.568,169.921 892.441,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="892.441,160.508 909.753,160.508 907.568,169.921 892.441,169.921 "/>
+    <rect style="fill: #f57b1e" x="895.264" y="163.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="895.264" y="163.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="872.271,169.921 888.407,169.921 888.407,174.627 896.475,174.627 896.475,179.333 864.203,179.333 864.203,174.627 872.271,174.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="872.271,169.921 888.407,169.921 888.407,174.627 896.475,174.627 896.475,179.333 864.203,179.333 864.203,174.627 872.271,174.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="880.339" y="194.023">
+      <tspan x="880.339" y="194.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="800" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="800" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="808.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="810.925,560.508 852.441,560.508 852.441,569.921 813.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="810.925,560.508 852.441,560.508 852.441,569.921 813.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="852.441,560.508 869.753,560.508 867.568,569.921 852.441,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="852.441,560.508 869.753,560.508 867.568,569.921 852.441,569.921 "/>
+    <rect style="fill: #f57b1e" x="855.264" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="855.264" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="832.271,569.921 848.407,569.921 848.407,574.627 856.475,574.627 856.475,579.333 824.203,579.333 824.203,574.627 832.271,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="832.271,569.921 848.407,569.921 848.407,574.627 856.475,574.627 856.475,579.333 824.203,579.333 824.203,574.627 832.271,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="840.339" y="594.023">
+      <tspan x="840.339" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 800 380 L 880,380 C 891.046,380 900,388.954 900,400 C 900,411.046 891.046,420 880,420 L 800,420 C 788.954,420 780,411.046 780,400 C 780,388.954 788.954,380 800,380z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 800 380 L 880,380 C 891.046,380 900,388.954 900,400 C 900,411.046 891.046,420 880,420 L 800,420 C 788.954,420 780,411.046 780,400 C 780,388.954 788.954,380 800,380"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="840" y="404">
+      <tspan x="840" y="404">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="790.559,300 891.032,300 876.474,340 776,340 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="790.559,300 891.032,300 876.474,340 776,340 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="833.516" y="323.9">
+      <tspan x="833.516" y="323.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="840" y1="420" x2="840.198" y2="489.774"/>
+    <polygon style="fill: #000000" points="840.219,497.274 835.191,487.288 840.198,489.774 845.191,487.26 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="840.219,497.274 835.191,487.288 840.198,489.774 845.191,487.26 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="826.237,340 826.237,360 840,360 840,370.264 "/>
+    <polygon style="fill: #000000" points="840,377.764 835,367.764 840,370.264 845,367.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="840,377.764 835,367.764 840,370.264 845,367.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="740" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="740" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="748.74" y="108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="750.925,160.508 792.441,160.508 792.441,169.921 753.11,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="750.925,160.508 792.441,160.508 792.441,169.921 753.11,169.921 "/>
+    <polygon style="fill: #b3b3b3" points="792.441,160.508 809.753,160.508 807.568,169.921 792.441,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="792.441,160.508 809.753,160.508 807.568,169.921 792.441,169.921 "/>
+    <rect style="fill: #f57b1e" x="795.264" y="163.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="795.264" y="163.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="772.271,169.921 788.407,169.921 788.407,174.627 796.475,174.627 796.475,179.333 764.203,179.333 764.203,174.627 772.271,174.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="772.271,169.921 788.407,169.921 788.407,174.627 796.475,174.627 796.475,179.333 764.203,179.333 764.203,174.627 772.271,174.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="780.339" y="194.023">
+      <tspan x="780.339" y="194.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="880,200 880,220 865.914,220 865.914,290.264 "/>
+    <polygon style="fill: #000000" points="865.914,297.764 860.914,287.764 865.914,290.264 870.914,287.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="865.914,297.764 860.914,287.764 865.914,290.264 870.914,287.764 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="780,200 780,220 815.678,220 815.678,290.264 "/>
+    <polygon style="fill: #000000" points="815.678,297.764 810.678,287.764 815.678,290.264 820.678,287.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="815.678,297.764 810.678,287.764 815.678,290.264 820.678,287.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="100" y="843.9" width="300" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="100" y="843.9" width="300" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="250" y="937.8">
+      <tspan x="250" y="937.8"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="248.3" y="683.9" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="248.3" y="683.9" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="257.04" y="692.64" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="259.225,744.408 300.741,744.408 300.741,753.821 261.41,753.821 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="259.225,744.408 300.741,744.408 300.741,753.821 261.41,753.821 "/>
+    <polygon style="fill: #b3b3b3" points="300.741,744.408 318.053,744.408 315.868,753.821 300.741,753.821 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="300.741,744.408 318.053,744.408 315.868,753.821 300.741,753.821 "/>
+    <rect style="fill: #f57b1e" x="303.564" y="747.232" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="303.564" y="747.232" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="280.571,753.821 296.707,753.821 296.707,758.527 304.775,758.527 304.775,763.233 272.503,763.233 272.503,758.527 280.571,758.527 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="280.571,753.821 296.707,753.821 296.707,758.527 304.775,758.527 304.775,763.233 272.503,763.233 272.503,758.527 280.571,758.527 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="288.639" y="777.923">
+      <tspan x="288.639" y="777.923">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="160" y="1200" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="160" y="1200" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="168.74" y="1208.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="170.925,1260.51 212.441,1260.51 212.441,1269.92 173.11,1269.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="170.925,1260.51 212.441,1260.51 212.441,1269.92 173.11,1269.92 "/>
+    <polygon style="fill: #b3b3b3" points="212.441,1260.51 229.753,1260.51 227.568,1269.92 212.441,1269.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="212.441,1260.51 229.753,1260.51 227.568,1269.92 212.441,1269.92 "/>
+    <rect style="fill: #f57b1e" x="215.264" y="1263.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="215.264" y="1263.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="192.271,1269.92 208.407,1269.92 208.407,1274.63 216.475,1274.63 216.475,1279.33 184.203,1279.33 184.203,1274.63 192.271,1274.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="192.271,1269.92 208.407,1269.92 208.407,1274.63 216.475,1274.63 216.475,1279.33 184.203,1279.33 184.203,1274.63 192.271,1274.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="200.339" y="1294.02">
+      <tspan x="200.339" y="1294.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 140 960 L 220,960 C 231.046,960 240,968.954 240,980 C 240,991.046 231.046,1000 220,1000 L 140,1000 C 128.954,1000 120,991.046 120,980 C 120,968.954 128.954,960 140,960z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 140 960 L 220,960 C 231.046,960 240,968.954 240,980 C 240,991.046 231.046,1000 220,1000 L 140,1000 C 128.954,1000 120,991.046 120,980 C 120,968.954 128.954,960 140,960"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="180" y="984">
+      <tspan x="180" y="984">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="198.859,883.9 299.332,883.9 284.774,923.9 184.3,923.9 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="198.859,883.9 299.332,883.9 284.774,923.9 184.3,923.9 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="241.816" y="907.8">
+      <tspan x="241.816" y="907.8">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="234.537,923.9 234.537,941.95 180,941.95 180,950.264 "/>
+    <polygon style="fill: #000000" points="180,957.764 175,947.764 180,950.264 185,947.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="180,957.764 175,947.764 180,950.264 185,947.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="148.3" y="683.9" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="148.3" y="683.9" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="157.04" y="692.64" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="159.225,744.408 200.741,744.408 200.741,753.821 161.41,753.821 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="159.225,744.408 200.741,744.408 200.741,753.821 161.41,753.821 "/>
+    <polygon style="fill: #b3b3b3" points="200.741,744.408 218.053,744.408 215.868,753.821 200.741,753.821 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="200.741,744.408 218.053,744.408 215.868,753.821 200.741,753.821 "/>
+    <rect style="fill: #f57b1e" x="203.564" y="747.232" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="203.564" y="747.232" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="180.571,753.821 196.707,753.821 196.707,758.527 204.775,758.527 204.775,763.233 172.503,763.233 172.503,758.527 180.571,758.527 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="180.571,753.821 196.707,753.821 196.707,758.527 204.775,758.527 204.775,763.233 172.503,763.233 172.503,758.527 180.571,758.527 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="188.639" y="777.923">
+      <tspan x="188.639" y="777.923">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="100" y="1100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="100" y="1100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="108.74" y="1108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="110.925,1160.51 152.441,1160.51 152.441,1169.92 113.11,1169.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="110.925,1160.51 152.441,1160.51 152.441,1169.92 113.11,1169.92 "/>
+    <polygon style="fill: #b3b3b3" points="152.441,1160.51 169.753,1160.51 167.568,1169.92 152.441,1169.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="152.441,1160.51 169.753,1160.51 167.568,1169.92 152.441,1169.92 "/>
+    <rect style="fill: #f57b1e" x="155.264" y="1163.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="155.264" y="1163.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="132.271,1169.92 148.407,1169.92 148.407,1174.63 156.475,1174.63 156.475,1179.33 124.203,1179.33 124.203,1174.63 132.271,1174.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="132.271,1169.92 148.407,1169.92 148.407,1174.63 156.475,1174.63 156.475,1179.33 124.203,1179.33 124.203,1174.63 132.271,1174.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="140.339" y="1194.02">
+      <tspan x="140.339" y="1194.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="320" y="1100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="320" y="1100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="328.74" y="1108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="330.925,1160.51 372.441,1160.51 372.441,1169.92 333.11,1169.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="330.925,1160.51 372.441,1160.51 372.441,1169.92 333.11,1169.92 "/>
+    <polygon style="fill: #b3b3b3" points="372.441,1160.51 389.753,1160.51 387.568,1169.92 372.441,1169.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="372.441,1160.51 389.753,1160.51 387.568,1169.92 372.441,1169.92 "/>
+    <rect style="fill: #f57b1e" x="375.264" y="1163.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="375.264" y="1163.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="352.271,1169.92 368.407,1169.92 368.407,1174.63 376.475,1174.63 376.475,1179.33 344.203,1179.33 344.203,1174.63 352.271,1174.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="352.271,1169.92 368.407,1169.92 368.407,1174.63 376.475,1174.63 376.475,1179.33 344.203,1179.33 344.203,1174.63 352.271,1174.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="360.339" y="1194.02">
+      <tspan x="360.339" y="1194.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="288.3,783.9 288.3,803.9 274.214,803.9 274.214,874.164 "/>
+    <polygon style="fill: #000000" points="274.214,881.664 269.214,871.664 274.214,874.164 279.214,871.664 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="274.214,881.664 269.214,871.664 274.214,874.164 279.214,871.664 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="188.3,783.9 188.3,803.9 223.978,803.9 223.978,874.164 "/>
+    <polygon style="fill: #000000" points="223.978,881.664 218.978,871.664 223.978,874.164 228.978,871.664 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="223.978,881.664 218.978,871.664 223.978,874.164 228.978,871.664 "/>
+  </g>
+  <g>
+    <path style="fill: #ffc0cb" d="M 280 960 L 360,960 C 371.046,960 380,968.954 380,980 C 380,991.046 371.046,1000 360,1000 L 280,1000 C 268.954,1000 260,991.046 260,980 C 260,968.954 268.954,960 280,960z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 280 960 L 360,960 C 371.046,960 380,968.954 380,980 C 380,991.046 371.046,1000 360,1000 L 280,1000 C 268.954,1000 260,991.046 260,980 C 260,968.954 268.954,960 280,960"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="320" y="984">
+      <tspan x="320" y="984">Kanál "B"</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="260" y="1200" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="260" y="1200" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="268.74" y="1208.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="270.925,1260.51 312.441,1260.51 312.441,1269.92 273.11,1269.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="270.925,1260.51 312.441,1260.51 312.441,1269.92 273.11,1269.92 "/>
+    <polygon style="fill: #b3b3b3" points="312.441,1260.51 329.753,1260.51 327.568,1269.92 312.441,1269.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="312.441,1260.51 329.753,1260.51 327.568,1269.92 312.441,1269.92 "/>
+    <rect style="fill: #f57b1e" x="315.264" y="1263.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="315.264" y="1263.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="292.271,1269.92 308.407,1269.92 308.407,1274.63 316.475,1274.63 316.475,1279.33 284.203,1279.33 284.203,1274.63 292.271,1274.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="292.271,1269.92 308.407,1269.92 308.407,1274.63 316.475,1274.63 316.475,1279.33 284.203,1279.33 284.203,1274.63 292.271,1274.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="300.339" y="1294.02">
+      <tspan x="300.339" y="1294.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="160,1000 160,1050 140,1050 140,1090.26 "/>
+    <polygon style="fill: #000000" points="140,1097.76 135,1087.76 140,1090.26 145,1087.76 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="140,1097.76 135,1087.76 140,1090.26 145,1087.76 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="320,1000 320,1050 360,1050 360,1090.26 "/>
+    <polygon style="fill: #000000" points="360,1097.76 355,1087.76 360,1090.26 365,1087.76 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="360,1097.76 355,1087.76 360,1090.26 365,1087.76 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="180,1000 180,1080 200.339,1080 200.339,1189.77 "/>
+    <polygon style="fill: #000000" points="200.339,1197.27 195.339,1187.27 200.339,1189.77 205.339,1187.27 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="200.339,1197.27 195.339,1187.27 200.339,1189.77 205.339,1187.27 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="200,1000 200,1060 300,1060 300,1190.26 "/>
+    <polygon style="fill: #000000" points="300,1197.76 295,1187.76 300,1190.26 305,1187.76 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="300,1197.76 295,1187.76 300,1190.26 305,1187.76 "/>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="931.7" y="860" width="288.3" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="931.7" y="860" width="288.3" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1075.85" y="953.9">
+      <tspan x="1075.85" y="953.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1280" y="700" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1280" y="700" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1288.74" y="708.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1290.93,760.508 1332.44,760.508 1332.44,769.921 1293.11,769.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1290.93,760.508 1332.44,760.508 1332.44,769.921 1293.11,769.921 "/>
+    <polygon style="fill: #b3b3b3" points="1332.44,760.508 1349.75,760.508 1347.57,769.921 1332.44,769.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1332.44,760.508 1349.75,760.508 1347.57,769.921 1332.44,769.921 "/>
+    <rect style="fill: #f57b1e" x="1335.26" y="763.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1335.26" y="763.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1312.27,769.921 1328.41,769.921 1328.41,774.627 1336.47,774.627 1336.47,779.333 1304.2,779.333 1304.2,774.627 1312.27,774.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1312.27,769.921 1328.41,769.921 1328.41,774.627 1336.47,774.627 1336.47,779.333 1304.2,779.333 1304.2,774.627 1312.27,774.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1320.34" y="794.023">
+      <tspan x="1320.34" y="794.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1100" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1100" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1108.74" y="1168.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1110.93,1220.51 1152.44,1220.51 1152.44,1229.92 1113.11,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1110.93,1220.51 1152.44,1220.51 1152.44,1229.92 1113.11,1229.92 "/>
+    <polygon style="fill: #b3b3b3" points="1152.44,1220.51 1169.75,1220.51 1167.57,1229.92 1152.44,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1152.44,1220.51 1169.75,1220.51 1167.57,1229.92 1152.44,1229.92 "/>
+    <rect style="fill: #f57b1e" x="1155.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1155.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1132.27,1229.92 1148.41,1229.92 1148.41,1234.63 1156.47,1234.63 1156.47,1239.33 1124.2,1239.33 1124.2,1234.63 1132.27,1234.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1132.27,1229.92 1148.41,1229.92 1148.41,1234.63 1156.47,1234.63 1156.47,1239.33 1124.2,1239.33 1124.2,1234.63 1132.27,1234.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1140.34" y="1254.02">
+      <tspan x="1140.34" y="1254.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 971.7 976.1 L 1051.7,976.1 C 1062.75,976.1 1071.7,985.054 1071.7,996.1 C 1071.7,1007.15 1062.75,1016.1 1051.7,1016.1 L 971.7,1016.1 C 960.654,1016.1 951.7,1007.15 951.7,996.1 C 951.7,985.054 960.654,976.1 971.7,976.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 971.7 976.1 L 1051.7,976.1 C 1062.75,976.1 1071.7,985.054 1071.7,996.1 C 1071.7,1007.15 1062.75,1016.1 1051.7,1016.1 L 971.7,1016.1 C 960.654,1016.1 951.7,1007.15 951.7,996.1 C 951.7,985.054 960.654,976.1 971.7,976.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1011.7" y="1000.1">
+      <tspan x="1011.7" y="1000.1">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="1030.56,900 1131.03,900 1116.47,940 1016,940 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1030.56,900 1131.03,900 1116.47,940 1016,940 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1073.52" y="923.9">
+      <tspan x="1073.52" y="923.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1066.24,940 1066.24,958.05 1011.7,958.05 1011.7,966.364 "/>
+    <polygon style="fill: #000000" points="1011.7,973.864 1006.7,963.864 1011.7,966.364 1016.7,963.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1011.7,973.864 1006.7,963.864 1011.7,966.364 1016.7,963.864 "/>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1100" y="700" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1100" y="700" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1108.74" y="708.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1110.93,760.508 1152.44,760.508 1152.44,769.921 1113.11,769.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1110.93,760.508 1152.44,760.508 1152.44,769.921 1113.11,769.921 "/>
+    <polygon style="fill: #b3b3b3" points="1152.44,760.508 1169.75,760.508 1167.57,769.921 1152.44,769.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1152.44,760.508 1169.75,760.508 1167.57,769.921 1152.44,769.921 "/>
+    <rect style="fill: #f57b1e" x="1155.26" y="763.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1155.26" y="763.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1132.27,769.921 1148.41,769.921 1148.41,774.627 1156.47,774.627 1156.47,779.333 1124.2,779.333 1124.2,774.627 1132.27,774.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1132.27,769.921 1148.41,769.921 1148.41,774.627 1156.47,774.627 1156.47,779.333 1124.2,779.333 1124.2,774.627 1132.27,774.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1140.34" y="794.023">
+      <tspan x="1140.34" y="794.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1000" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1000" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1008.74" y="1168.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1010.93,1220.51 1052.44,1220.51 1052.44,1229.92 1013.11,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1010.93,1220.51 1052.44,1220.51 1052.44,1229.92 1013.11,1229.92 "/>
+    <polygon style="fill: #b3b3b3" points="1052.44,1220.51 1069.75,1220.51 1067.57,1229.92 1052.44,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1052.44,1220.51 1069.75,1220.51 1067.57,1229.92 1052.44,1229.92 "/>
+    <rect style="fill: #f57b1e" x="1055.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1055.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1032.27,1229.92 1048.41,1229.92 1048.41,1234.63 1056.47,1234.63 1056.47,1239.33 1024.2,1239.33 1024.2,1234.63 1032.27,1234.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1032.27,1229.92 1048.41,1229.92 1048.41,1234.63 1056.47,1234.63 1056.47,1239.33 1024.2,1239.33 1024.2,1234.63 1032.27,1234.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1040.34" y="1254.02">
+      <tspan x="1040.34" y="1254.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1300" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1300" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1308.74" y="1168.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1310.93,1220.51 1352.44,1220.51 1352.44,1229.92 1313.11,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1310.93,1220.51 1352.44,1220.51 1352.44,1229.92 1313.11,1229.92 "/>
+    <polygon style="fill: #b3b3b3" points="1352.44,1220.51 1369.75,1220.51 1367.57,1229.92 1352.44,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1352.44,1220.51 1369.75,1220.51 1367.57,1229.92 1352.44,1229.92 "/>
+    <rect style="fill: #f57b1e" x="1355.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1355.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1332.27,1229.92 1348.41,1229.92 1348.41,1234.63 1356.47,1234.63 1356.47,1239.33 1324.2,1239.33 1324.2,1234.63 1332.27,1234.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1332.27,1229.92 1348.41,1229.92 1348.41,1234.63 1356.47,1234.63 1356.47,1239.33 1324.2,1239.33 1324.2,1234.63 1332.27,1234.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1340.34" y="1254.02">
+      <tspan x="1340.34" y="1254.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1320,800 1320,820 1409.1,820 1409.1,890.264 "/>
+    <polygon style="fill: #000000" points="1409.1,897.764 1404.1,887.764 1409.1,890.264 1414.1,887.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1409.1,897.764 1404.1,887.764 1409.1,890.264 1414.1,887.764 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1140,800 1140,820 1055.68,820 1055.68,890.264 "/>
+    <polygon style="fill: #000000" points="1055.68,897.764 1050.68,887.764 1055.68,890.264 1060.68,887.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1055.68,897.764 1050.68,887.764 1055.68,890.264 1060.68,887.764 "/>
+  </g>
+  <g>
+    <path style="fill: #ffc0cb" d="M 1111.7 976.1 L 1191.7,976.1 C 1202.75,976.1 1211.7,985.054 1211.7,996.1 C 1211.7,1007.15 1202.75,1016.1 1191.7,1016.1 L 1111.7,1016.1 C 1100.65,1016.1 1091.7,1007.15 1091.7,996.1 C 1091.7,985.054 1100.65,976.1 1111.7,976.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 1111.7 976.1 L 1191.7,976.1 C 1202.75,976.1 1211.7,985.054 1211.7,996.1 C 1211.7,1007.15 1202.75,1016.1 1191.7,1016.1 L 1111.7,1016.1 C 1100.65,1016.1 1091.7,1007.15 1091.7,996.1 C 1091.7,985.054 1100.65,976.1 1111.7,976.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1151.7" y="1000.1">
+      <tspan x="1151.7" y="1000.1">Kanál "B"</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1200" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1200" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1208.74" y="1168.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1210.93,1220.51 1252.44,1220.51 1252.44,1229.92 1213.11,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1210.93,1220.51 1252.44,1220.51 1252.44,1229.92 1213.11,1229.92 "/>
+    <polygon style="fill: #b3b3b3" points="1252.44,1220.51 1269.75,1220.51 1267.57,1229.92 1252.44,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1252.44,1220.51 1269.75,1220.51 1267.57,1229.92 1252.44,1229.92 "/>
+    <rect style="fill: #f57b1e" x="1255.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1255.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1232.27,1229.92 1248.41,1229.92 1248.41,1234.63 1256.47,1234.63 1256.47,1239.33 1224.2,1239.33 1224.2,1234.63 1232.27,1234.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1232.27,1229.92 1248.41,1229.92 1248.41,1234.63 1256.47,1234.63 1256.47,1239.33 1224.2,1239.33 1224.2,1234.63 1232.27,1234.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1240.34" y="1254.02">
+      <tspan x="1240.34" y="1254.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 1300 976.1 L 1380,976.1 C 1391.05,976.1 1400,985.054 1400,996.1 C 1400,1007.15 1391.05,1016.1 1380,1016.1 L 1300,1016.1 C 1288.95,1016.1 1280,1007.15 1280,996.1 C 1280,985.054 1288.95,976.1 1300,976.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 1300 976.1 L 1380,976.1 C 1391.05,976.1 1400,985.054 1400,996.1 C 1400,1007.15 1391.05,1016.1 1380,1016.1 L 1300,1016.1 C 1288.95,1016.1 1280,1007.15 1280,996.1 C 1280,985.054 1288.95,976.1 1300,976.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1340" y="1000.1">
+      <tspan x="1340" y="1000.1">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="1358.86,900 1459.33,900 1444.77,940 1344.3,940 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1358.86,900 1459.33,900 1444.77,940 1344.3,940 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1401.82" y="923.9">
+      <tspan x="1401.82" y="923.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1394.54,940 1394.54,958.05 1340,958.05 1340,966.364 "/>
+    <polygon style="fill: #000000" points="1340,973.864 1335,963.864 1340,966.364 1345,963.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1340,973.864 1335,963.864 1340,966.364 1345,963.864 "/>
+  </g>
+  <g>
+    <path style="fill: #ffc0cb" d="M 1440 976.1 L 1520,976.1 C 1531.05,976.1 1540,985.054 1540,996.1 C 1540,1007.15 1531.05,1016.1 1520,1016.1 L 1440,1016.1 C 1428.95,1016.1 1420,1007.15 1420,996.1 C 1420,985.054 1428.95,976.1 1440,976.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 1440 976.1 L 1520,976.1 C 1531.05,976.1 1540,985.054 1540,996.1 C 1540,1007.15 1531.05,1016.1 1520,1016.1 L 1440,1016.1 C 1428.95,1016.1 1420,1007.15 1420,996.1 C 1420,985.054 1428.95,976.1 1440,976.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1480" y="1000.1">
+      <tspan x="1480" y="1000.1">Kanál "B"</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1400" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1400" y="1160" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1408.74" y="1168.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1410.93,1220.51 1452.44,1220.51 1452.44,1229.92 1413.11,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1410.93,1220.51 1452.44,1220.51 1452.44,1229.92 1413.11,1229.92 "/>
+    <polygon style="fill: #b3b3b3" points="1452.44,1220.51 1469.75,1220.51 1467.57,1229.92 1452.44,1229.92 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1452.44,1220.51 1469.75,1220.51 1467.57,1229.92 1452.44,1229.92 "/>
+    <rect style="fill: #f57b1e" x="1455.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1455.26" y="1223.33" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1432.27,1229.92 1448.41,1229.92 1448.41,1234.63 1456.47,1234.63 1456.47,1239.33 1424.2,1239.33 1424.2,1234.63 1432.27,1234.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1432.27,1229.92 1448.41,1229.92 1448.41,1234.63 1456.47,1234.63 1456.47,1239.33 1424.2,1239.33 1424.2,1234.63 1432.27,1234.63 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1440.34" y="1254.02">
+      <tspan x="1440.34" y="1254.02">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="259.655,923.9 259.655,941.95 320,941.95 320,950.264 "/>
+    <polygon style="fill: #000000" points="320,957.764 315,947.764 320,950.264 325,947.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="320,957.764 315,947.764 320,950.264 325,947.764 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1091.36,940 1091.36,958.05 1151.7,958.05 1151.7,966.364 "/>
+    <polygon style="fill: #000000" points="1151.7,973.864 1146.7,963.864 1151.7,966.364 1156.7,963.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1151.7,973.864 1146.7,963.864 1151.7,966.364 1156.7,963.864 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1419.66,940 1419.66,958.05 1480,958.05 1480,966.364 "/>
+    <polygon style="fill: #000000" points="1480,973.864 1475,963.864 1480,966.364 1485,963.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1480,973.864 1475,963.864 1480,966.364 1485,963.864 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1011.7" y1="1016.1" x2="1038.12" y2="1150.45"/>
+    <polygon style="fill: #000000" points="1039.57,1157.81 1032.73,1148.96 1038.12,1150.45 1042.54,1147.03 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1039.57,1157.81 1032.73,1148.96 1038.12,1150.45 1042.54,1147.03 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1340" y1="1016.1" x2="1068.66" y2="1155.55"/>
+    <polygon style="fill: #000000" points="1061.99,1158.98 1068.6,1149.96 1068.66,1155.55 1073.17,1158.85 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1061.99,1158.98 1068.6,1149.96 1068.66,1155.55 1073.17,1158.85 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1011.7" y1="1016.1" x2="1114.15" y2="1152.22"/>
+    <polygon style="fill: #000000" points="1118.66,1158.21 1108.65,1153.23 1114.15,1152.22 1116.64,1147.22 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1118.66,1158.21 1108.65,1153.23 1114.15,1152.22 1116.64,1147.22 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1340" y1="1016.1" x2="1167.6" y2="1153.92"/>
+    <polygon style="fill: #000000" points="1161.75,1158.6 1166.44,1148.45 1167.6,1153.92 1172.68,1156.26 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1161.75,1158.6 1166.44,1148.45 1167.6,1153.92 1172.68,1156.26 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1151.7" y1="1016.1" x2="1215.83" y2="1151.2"/>
+    <polygon style="fill: #000000" points="1219.04,1157.98 1210.24,1151.09 1215.83,1151.2 1219.27,1146.8 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1219.04,1157.98 1210.24,1151.09 1215.83,1151.2 1219.27,1146.8 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1151.7" y1="1016.1" x2="1312.6" y2="1153.67"/>
+    <polygon style="fill: #000000" points="1318.3,1158.55 1307.45,1155.85 1312.6,1153.67 1313.95,1148.25 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1318.3,1158.55 1307.45,1155.85 1312.6,1153.67 1313.95,1148.25 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1151.7" y1="1016.1" x2="1411.42" y2="1155.4"/>
+    <polygon style="fill: #000000" points="1418.03,1158.94 1406.85,1158.62 1411.42,1155.4 1411.58,1149.81 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1418.03,1158.94 1406.85,1158.62 1411.42,1155.4 1411.58,1149.81 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1480" y1="1016.1" x2="1268.15" y2="1154.67"/>
+    <polygon style="fill: #000000" points="1261.87,1158.78 1267.5,1149.12 1268.15,1154.67 1272.98,1157.49 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1261.87,1158.78 1267.5,1149.12 1268.15,1154.67 1272.98,1157.49 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1480" y1="1016.1" x2="1366.24" y2="1152.52"/>
+    <polygon style="fill: #000000" points="1361.43,1158.28 1364,1147.4 1366.24,1152.52 1371.68,1153.8 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1361.43,1158.28 1364,1147.4 1366.24,1152.52 1371.68,1153.8 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1480" y1="1016.1" x2="1442.61" y2="1150.62"/>
+    <polygon style="fill: #000000" points="1440.6,1157.85 1438.46,1146.87 1442.61,1150.62 1448.09,1149.55 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1440.6,1157.85 1438.46,1146.87 1442.61,1150.62 1448.09,1149.55 "/>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="1120" y="260" width="160" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="1120" y="260" width="160" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1200" y="353.9">
+      <tspan x="1200" y="353.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1160" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1160" y="100" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1168.74" y="108.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1170.93,160.508 1212.44,160.508 1212.44,169.921 1173.11,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1170.93,160.508 1212.44,160.508 1212.44,169.921 1173.11,169.921 "/>
+    <polygon style="fill: #b3b3b3" points="1212.44,160.508 1229.75,160.508 1227.57,169.921 1212.44,169.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1212.44,160.508 1229.75,160.508 1227.57,169.921 1212.44,169.921 "/>
+    <rect style="fill: #f57b1e" x="1215.26" y="163.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1215.26" y="163.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1192.27,169.921 1208.41,169.921 1208.41,174.627 1216.47,174.627 1216.47,179.333 1184.2,179.333 1184.2,174.627 1192.27,174.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1192.27,169.921 1208.41,169.921 1208.41,174.627 1216.47,174.627 1216.47,179.333 1184.2,179.333 1184.2,174.627 1192.27,174.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1200.34" y="194.023">
+      <tspan x="1200.34" y="194.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1160" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1160" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1168.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1170.93,560.508 1212.44,560.508 1212.44,569.921 1173.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1170.93,560.508 1212.44,560.508 1212.44,569.921 1173.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="1212.44,560.508 1229.75,560.508 1227.57,569.921 1212.44,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1212.44,560.508 1229.75,560.508 1227.57,569.921 1212.44,569.921 "/>
+    <rect style="fill: #f57b1e" x="1215.26" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1215.26" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1192.27,569.921 1208.41,569.921 1208.41,574.627 1216.47,574.627 1216.47,579.333 1184.2,579.333 1184.2,574.627 1192.27,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1192.27,569.921 1208.41,569.921 1208.41,574.627 1216.47,574.627 1216.47,579.333 1184.2,579.333 1184.2,574.627 1192.27,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1200.34" y="594.023">
+      <tspan x="1200.34" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 1160 380 L 1240,380 C 1251.05,380 1260,388.954 1260,400 C 1260,411.046 1251.05,420 1240,420 L 1160,420 C 1148.95,420 1140,411.046 1140,400 C 1140,388.954 1148.95,380 1160,380z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 1160 380 L 1240,380 C 1251.05,380 1260,388.954 1260,400 C 1260,411.046 1251.05,420 1240,420 L 1160,420 C 1148.95,420 1140,411.046 1140,400 C 1140,388.954 1148.95,380 1160,380"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1200" y="404">
+      <tspan x="1200" y="404">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="1150.56,300 1251.03,300 1236.47,340 1136,340 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1150.56,300 1251.03,300 1236.47,340 1136,340 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1193.52" y="323.9">
+      <tspan x="1193.52" y="323.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1200" y1="420" x2="1200.2" y2="489.774"/>
+    <polygon style="fill: #000000" points="1200.22,497.274 1195.19,487.288 1200.2,489.774 1205.19,487.26 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1200.22,497.274 1195.19,487.288 1200.2,489.774 1205.19,487.26 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1186.24,340 1186.24,360 1200,360 1200,370.264 "/>
+    <polygon style="fill: #000000" points="1200,377.764 1195,367.764 1200,370.264 1205,367.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1200,377.764 1195,367.764 1200,370.264 1205,367.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1060" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1060" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1068.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1070.93,560.508 1112.44,560.508 1112.44,569.921 1073.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1070.93,560.508 1112.44,560.508 1112.44,569.921 1073.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="1112.44,560.508 1129.75,560.508 1127.57,569.921 1112.44,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1112.44,560.508 1129.75,560.508 1127.57,569.921 1112.44,569.921 "/>
+    <rect style="fill: #f57b1e" x="1115.26" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1115.26" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1092.27,569.921 1108.41,569.921 1108.41,574.627 1116.47,574.627 1116.47,579.333 1084.2,579.333 1084.2,574.627 1092.27,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1092.27,569.921 1108.41,569.921 1108.41,574.627 1116.47,574.627 1116.47,579.333 1084.2,579.333 1084.2,574.627 1092.27,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1100.34" y="594.023">
+      <tspan x="1100.34" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="1260" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="1260" y="500" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="1268.74" y="508.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="1270.93,560.508 1312.44,560.508 1312.44,569.921 1273.11,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1270.93,560.508 1312.44,560.508 1312.44,569.921 1273.11,569.921 "/>
+    <polygon style="fill: #b3b3b3" points="1312.44,560.508 1329.75,560.508 1327.57,569.921 1312.44,569.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1312.44,560.508 1329.75,560.508 1327.57,569.921 1312.44,569.921 "/>
+    <rect style="fill: #f57b1e" x="1315.26" y="563.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="1315.26" y="563.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="1292.27,569.921 1308.41,569.921 1308.41,574.627 1316.47,574.627 1316.47,579.333 1284.2,579.333 1284.2,574.627 1292.27,574.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="1292.27,569.921 1308.41,569.921 1308.41,574.627 1316.47,574.627 1316.47,579.333 1284.2,579.333 1284.2,574.627 1292.27,574.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1300.34" y="594.023">
+      <tspan x="1300.34" y="594.023">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1180,420 1180,460 1100,460 1100,490.264 "/>
+    <polygon style="fill: #000000" points="1100,497.764 1095,487.764 1100,490.264 1105,487.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1100,497.764 1095,487.764 1100,490.264 1105,487.764 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1220,420 1220,460 1300,460 1300,490.264 "/>
+    <polygon style="fill: #000000" points="1300,497.764 1295,487.764 1300,490.264 1305,487.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1300,497.764 1295,487.764 1300,490.264 1305,487.764 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1200,200 1200,220 1200.8,220 1200.8,290.264 "/>
+    <polygon style="fill: #000000" points="1200.8,297.764 1195.8,287.764 1200.8,290.264 1205.8,287.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1200.8,297.764 1195.8,287.764 1200.8,290.264 1205.8,287.764 "/>
+  </g>
+  <g>
+    <rect style="fill: #f2f4c0" x="511.7" y="840" width="300" height="180"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="511.7" y="840" width="300" height="180"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="661.7" y="933.9">
+      <tspan x="661.7" y="933.9"></tspan>
+    </text>
+  </g>
+  <g>
+    <path style="fill: #bcefb6" d="M 551.7 956.1 L 631.7,956.1 C 642.746,956.1 651.7,965.054 651.7,976.1 C 651.7,987.146 642.746,996.1 631.7,996.1 L 551.7,996.1 C 540.654,996.1 531.7,987.146 531.7,976.1 C 531.7,965.054 540.654,956.1 551.7,956.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 551.7 956.1 L 631.7,956.1 C 642.746,956.1 651.7,965.054 651.7,976.1 C 651.7,987.146 642.746,996.1 631.7,996.1 L 551.7,996.1 C 540.654,996.1 531.7,987.146 531.7,976.1 C 531.7,965.054 540.654,956.1 551.7,956.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="591.7" y="980.1">
+      <tspan x="591.7" y="980.1">Kanál "A"</tspan>
+    </text>
+  </g>
+  <g>
+    <polygon style="fill: #95c1f7" points="610.559,880 711.032,880 696.474,920 596,920 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="610.559,880 711.032,880 696.474,920 596,920 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="653.516" y="903.9">
+      <tspan x="653.516" y="903.9">Topic "test"</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="646.237,920 646.237,938.05 591.7,938.05 591.7,946.364 "/>
+    <polygon style="fill: #000000" points="591.7,953.864 586.7,943.864 591.7,946.364 596.7,943.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="591.7,953.864 586.7,943.864 591.7,946.364 596.7,943.864 "/>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="620" y="680" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="620" y="680" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="628.74" y="688.74" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="630.925,740.508 672.441,740.508 672.441,749.921 633.11,749.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="630.925,740.508 672.441,740.508 672.441,749.921 633.11,749.921 "/>
+    <polygon style="fill: #b3b3b3" points="672.441,740.508 689.753,740.508 687.568,749.921 672.441,749.921 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="672.441,740.508 689.753,740.508 687.568,749.921 672.441,749.921 "/>
+    <rect style="fill: #f57b1e" x="675.264" y="743.332" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="675.264" y="743.332" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="652.271,749.921 668.407,749.921 668.407,754.627 676.475,754.627 676.475,759.333 644.203,759.333 644.203,754.627 652.271,754.627 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="652.271,749.921 668.407,749.921 668.407,754.627 676.475,754.627 676.475,759.333 644.203,759.333 644.203,754.627 652.271,754.627 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="660.339" y="774.023">
+      <tspan x="660.339" y="774.023">Producent</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="511.7" y="1096.1" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="511.7" y="1096.1" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="520.44" y="1104.84" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="522.625,1156.61 564.141,1156.61 564.141,1166.02 524.81,1166.02 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="522.625,1156.61 564.141,1156.61 564.141,1166.02 524.81,1166.02 "/>
+    <polygon style="fill: #b3b3b3" points="564.141,1156.61 581.453,1156.61 579.268,1166.02 564.141,1166.02 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="564.141,1156.61 581.453,1156.61 579.268,1166.02 564.141,1166.02 "/>
+    <rect style="fill: #f57b1e" x="566.964" y="1159.43" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="566.964" y="1159.43" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="543.971,1166.02 560.107,1166.02 560.107,1170.73 568.175,1170.73 568.175,1175.43 535.903,1175.43 535.903,1170.73 543.971,1170.73 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="543.971,1166.02 560.107,1166.02 560.107,1170.73 568.175,1170.73 568.175,1175.43 535.903,1175.43 535.903,1170.73 543.971,1170.73 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="552.039" y="1190.12">
+      <tspan x="552.039" y="1190.12">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #b3b3b3" x="731.7" y="1096.1" width="80.678" height="60.5085"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" x="731.7" y="1096.1" width="80.678" height="60.5085"/>
+    <rect style="fill: #000000" x="740.44" y="1104.84" width="63.1977" height="41.6836"/>
+    <polygon style="fill: #b3b3b3" points="742.625,1156.61 784.141,1156.61 784.141,1166.02 744.81,1166.02 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="742.625,1156.61 784.141,1156.61 784.141,1166.02 744.81,1166.02 "/>
+    <polygon style="fill: #b3b3b3" points="784.141,1156.61 801.453,1156.61 799.268,1166.02 784.141,1166.02 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="784.141,1156.61 801.453,1156.61 799.268,1166.02 784.141,1166.02 "/>
+    <rect style="fill: #f57b1e" x="786.964" y="1159.43" width="3.76497" height="3.76497"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.5; stroke: #000000" x="786.964" y="1159.43" width="3.76497" height="3.76497"/>
+    <polygon style="fill: #b3b3b3" points="763.971,1166.02 780.107,1166.02 780.107,1170.73 788.175,1170.73 788.175,1175.43 755.903,1175.43 755.903,1170.73 763.971,1170.73 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 1; stroke: #000000" points="763.971,1166.02 780.107,1166.02 780.107,1170.73 788.175,1170.73 788.175,1175.43 755.903,1175.43 755.903,1170.73 763.971,1170.73 "/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="772.039" y="1190.12">
+      <tspan x="772.039" y="1190.12">Konzument</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="660,780 660,800 660.796,800 660.796,870.264 "/>
+    <polygon style="fill: #000000" points="660.796,877.764 655.796,867.764 660.796,870.264 665.796,867.764 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="660.796,877.764 655.796,867.764 660.796,870.264 665.796,867.764 "/>
+  </g>
+  <g>
+    <path style="fill: #ffc0cb" d="M 691.7 956.1 L 771.7,956.1 C 782.746,956.1 791.7,965.054 791.7,976.1 C 791.7,987.146 782.746,996.1 771.7,996.1 L 691.7,996.1 C 680.654,996.1 671.7,987.146 671.7,976.1 C 671.7,965.054 680.654,956.1 691.7,956.1z"/>
+    <path style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" d="M 691.7 956.1 L 771.7,956.1 C 782.746,956.1 791.7,965.054 791.7,976.1 C 791.7,987.146 782.746,996.1 771.7,996.1 L 691.7,996.1 C 680.654,996.1 671.7,987.146 671.7,976.1 C 671.7,965.054 680.654,956.1 691.7,956.1"/>
+    <text font-size="12.8" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="731.7" y="980.1">
+      <tspan x="731.7" y="980.1">Kanál "B"</tspan>
+    </text>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="571.7,996.1 571.7,1046.1 551.7,1046.1 551.7,1086.36 "/>
+    <polygon style="fill: #000000" points="551.7,1093.86 546.7,1083.86 551.7,1086.36 556.7,1083.86 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="551.7,1093.86 546.7,1083.86 551.7,1086.36 556.7,1083.86 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="731.7,996.1 731.7,1046.1 771.7,1046.1 771.7,1086.36 "/>
+    <polygon style="fill: #000000" points="771.7,1093.86 766.7,1083.86 771.7,1086.36 776.7,1083.86 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="771.7,1093.86 766.7,1083.86 771.7,1086.36 776.7,1083.86 "/>
+  </g>
+  <g>
+    <polyline style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="671.355,920 671.355,938.05 731.7,938.05 731.7,946.364 "/>
+    <polygon style="fill: #000000" points="731.7,953.864 726.7,943.864 731.7,946.364 736.7,943.864 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="731.7,953.864 726.7,943.864 731.7,946.364 736.7,943.864 "/>
+  </g>
+</svg>
