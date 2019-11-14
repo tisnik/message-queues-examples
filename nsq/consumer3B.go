@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Panic("Could not connect")
 	}
-	defer consumer.DisconnectFromNSQLookupd("127.0.0.1:4150")
+	defer consumer.DisconnectFromNSQLookupd("127.0.0.1:4160")
 
 	log.Println("Waiting for message")
 	<-done
