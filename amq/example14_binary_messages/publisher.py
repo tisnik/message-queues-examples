@@ -14,7 +14,7 @@ conn.connect(login="admin", passcode="admin")
 
 with open("vim_editor.gif", mode="rb") as file:
     binaryData = file.read()
-    print("Read {l} bytes from binary file".format(l=len(binaryData)))
+    print("Read {length} bytes from binary file".format(length=len(binaryData)))
 
     textData = base64.b64encode(binaryData)
     conn.send(destination, textData, persistent='true')
