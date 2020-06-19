@@ -12,7 +12,7 @@ class SimpleListener:
 
     def on_message(self, headers, message):
         binaryData = base64.b64decode(message)
-        print("Received {l} characters".format(l=len(message)))
+        print("Received {length} characters".format(length=len(message)))
         print("   converted into {l} bytes".format(l=len(binaryData)))
 
         with open("output.gif", "wb") as f:
