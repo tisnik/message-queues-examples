@@ -18,7 +18,7 @@ with open("vim_editor.gif", mode="rb") as file:
 
     textData = base64.b64encode(binaryData)
     conn.send(destination, textData, persistent='true')
-    print("Sent {l} characters".format(l=len(textData)))
+    print("Sent {length} characters".format(length=len(textData)))
 
 
 conn.disconnect()
