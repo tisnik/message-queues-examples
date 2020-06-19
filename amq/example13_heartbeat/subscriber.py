@@ -27,7 +27,7 @@ class SimpleListener:
 
 destination = "/topic/event"
 
-conn = stomp.Connection([("localhost", 61613)], heartbeats=(0,1000))
+conn = stomp.Connection([("localhost", 61613)], heartbeats=(0, 1000))
 conn.set_listener('', SimpleListener(conn))
 conn.start()
 
