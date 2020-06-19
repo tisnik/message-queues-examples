@@ -14,7 +14,7 @@ conn.start()
 conn.connect(login="admin", passcode="admin")
 
 
-transaction=conn.begin()
+transaction = conn.begin()
 print(transaction)
 
 for i in range(0, MESSAGES):
