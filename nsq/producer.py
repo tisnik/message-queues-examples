@@ -9,6 +9,7 @@ def pub_message():
     writer.pub('test', 'zprava {}'.format(cnt).encode(), finish_pub)
     cnt += 1
 
+
 def finish_pub(conn, data):
     print("FINISHING")
     print(data.decode())
