@@ -4,6 +4,7 @@ import time
 
 cnt = 1
 
+
 def pub_message():
     global cnt
     writer.pub('test', 'zprava {}'.format(cnt).encode(), finish_pub)
