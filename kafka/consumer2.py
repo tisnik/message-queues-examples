@@ -18,6 +18,7 @@ consumer.seek(tp, 0)
 
 try:
     for message in consumer:
-        print("%s:%d:%d: key=%s value=%s" % (message.topic, message.partition, message.offset, message.key, message.value))
+        print("%s:%d:%d: key=%s value=%s" % (message.topic, message.partition,
+                                             message.offset, message.key, message.value))
 except KeyboardInterrupt:
     sys.exit()
