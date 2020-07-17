@@ -1,5 +1,6 @@
 import nsq
 
+
 def handler(message):
     print(message)
     return True
