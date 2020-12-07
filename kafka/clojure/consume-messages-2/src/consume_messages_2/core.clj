@@ -11,7 +11,6 @@
    "group.id"  "group-A"})
 
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
   (with-open [consumer (-> (jc/consumer consumer-config)
                            (jc/subscribe [{:topic-name "test1"}]))]
