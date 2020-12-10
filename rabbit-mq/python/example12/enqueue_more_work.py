@@ -13,9 +13,10 @@ def run_producer():
     for i in range(0, 100):
         priority = 100 - i
         prop = BasicProperties(priority=priority)
+        body = 'Hello World! #{i} msg with priority {p}'.format(i=i, p=priority)
         channel.basic_publish(exchange='',
                               routing_key='priority_queue_3',
-                              body='Hello World! #{i} msg with priority {p}'.format(i=i, p=priority),
+                              body=body,
                               properties=prop)
 
     connection.close()
