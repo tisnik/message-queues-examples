@@ -6,6 +6,7 @@ from time import sleep
 
 huey = RedisHuey()
 
+
 @huey.task()
 def add(a, b):
     """Úloha pro rychlý součet dvou hodnot."""
