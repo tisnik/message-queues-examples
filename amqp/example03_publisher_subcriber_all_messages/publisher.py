@@ -7,6 +7,7 @@ TARGET = "queue://test"
 
 MAX_MESSAGES = 10
 
+
 class Publisher(MessagingHandler):
 
     def __init__(self, url, target):
