@@ -9,7 +9,7 @@ def on_receive(ch, method, properties, body):
     print("Received %r" % body)
     sleep(5)
     print("Done processing %r" % body)
-    ch.basic_ack(delivery_tag = method.delivery_tag)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 channel.basic_qos(prefetch_count=1)
