@@ -5,6 +5,7 @@ from huey import RedisHuey
 
 huey = RedisHuey()
 
+
 @huey.periodic_task(crontab(minute='*'))
 def periodic():
     print("*** NOW ***")
