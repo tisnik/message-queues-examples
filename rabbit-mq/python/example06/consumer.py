@@ -6,6 +6,7 @@ from rabbitmq_connect import connect, open_channel
 connection = connect()
 channel = open_channel(connection)
 
+
 def on_receive(ch, method, properties, body):
     print("Received %r" % body)
     sleep(5)
