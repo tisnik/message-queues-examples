@@ -26,7 +26,8 @@ class Publisher(MessagingHandler):
         print("on_sendable()")
         if self.message_sent < MAX_MESSAGES:
             self.message_sent += 1
-            message = Message(id=self.message_sent, body="Hello world #{n}".format(n=self.message_sent))
+            body = "Hello world #{n}".format(n=self.message_sent)
+            message = Message(id=self.message_sent, body=body)
             event.sender.send(message)
             print("Message #{n} has been sent".format(n=self.message_sent))
         elif self.message_sent == MAX_MESSAGES:
