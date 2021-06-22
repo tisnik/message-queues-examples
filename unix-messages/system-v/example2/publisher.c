@@ -1,3 +1,10 @@
+/*
+ * Example used in following article:
+ *
+ * Fronty zpráv podle Systemu V
+ * https://www.root.cz/clanky/fronty-zprav-podle-systemu-v/
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
