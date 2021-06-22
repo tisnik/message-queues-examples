@@ -1,3 +1,10 @@
+/*
+ * Example used in following article:
+ *
+ * Implementace front zpráv podle normy POSIX
+ * https://www.root.cz/clanky/implementace-front-zprav-podle-normy-posix/
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
