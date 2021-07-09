@@ -17,6 +17,8 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [fundingcircle/jackdaw "0.7.6"]]
+  :plugins [[lein-codox "0.10.7"]
+            ]
   :main ^:skip-aot consume-messages-1.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
