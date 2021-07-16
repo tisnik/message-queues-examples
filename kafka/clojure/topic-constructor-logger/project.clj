@@ -18,6 +18,8 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [fundingcircle/jackdaw "0.7.6"]
                  [ch.qos.logback/logback-classic "1.1.3"]]
+  :plugins [[lein-codox "0.10.7"]
+            ]
   :main ^:skip-aot topic-constructor.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
