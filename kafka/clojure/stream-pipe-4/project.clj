@@ -23,6 +23,8 @@
                                                     com.sun.jmdk/jmxtools
                                                     com.sun.jmx/jmxri]]
                  [org.slf4j/slf4j-log4j12 "1.6.6"]]
+  :plugins [[lein-codox "0.10.7"]
+            ]
   :main ^:skip-aot stream-pipe-4.core
   :target-path "target/%s"
   :resource-paths ["resources/"]
