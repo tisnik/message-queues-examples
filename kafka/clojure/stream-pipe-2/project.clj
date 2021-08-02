@@ -24,6 +24,7 @@
                                                     com.sun.jmx/jmxri]]
                  [org.slf4j/slf4j-log4j12 "1.6.6"]]
   :plugins [[lein-codox "0.10.7"]
+            [test2junit "1.1.0"]
             ]
   :main ^:skip-aot stream-pipe-2.core
   :target-path "target/%s"
