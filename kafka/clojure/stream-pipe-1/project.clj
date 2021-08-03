@@ -25,6 +25,7 @@
                  [org.slf4j/slf4j-log4j12 "1.6.6"]]
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
+            [lein-cloverage "1.0.7-SNAPSHOT"]
             ]
   :main ^:skip-aot stream-pipe-1.core
   :target-path "target/%s"
