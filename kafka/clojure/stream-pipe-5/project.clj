@@ -26,6 +26,7 @@
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
             [lein-cloverage "1.0.7-SNAPSHOT"]
+            [lein-kibit "0.1.8"]
             ]
   :main ^:skip-aot stream-pipe-5.core
   :target-path "target/%s"
