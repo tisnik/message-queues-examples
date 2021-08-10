@@ -25,6 +25,7 @@
             [lein-project-edn "0.3.0"]
             [lein-marginalia "0.9.1"]
             ]
+  :project-edn {:output-file "doc/details.clj"}
   :main ^:skip-aot consume-messages-2.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
