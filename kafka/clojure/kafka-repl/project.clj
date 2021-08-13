@@ -18,6 +18,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [fundingcircle/jackdaw "0.7.6"]]
   :plugins [[lein-kibit "0.1.8"]
+            [test2junit "1.1.0"]
             [lein-marginalia "0.9.1"]]
   :main ^:skip-aot kafka-repl.core
   :target-path "target/%s"
