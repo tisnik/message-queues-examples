@@ -51,7 +51,6 @@
   [org.apache.kafka/kafka-clients "2.3.1"]
   {[com.github.luben/zstd-jni "1.4.0-1"] nil,
    [org.lz4/lz4-java "1.6.0"] nil,
-   [org.slf4j/slf4j-api "1.7.26"] nil,
    [org.xerial.snappy/snappy-java "1.1.7.3"] nil},
   [org.apache.kafka/kafka-streams "2.3.1"]
   {[org.apache.kafka/connect-json
@@ -69,12 +68,21 @@
   {[org.clojure/data.priority-map "0.0.7"] nil},
   [org.clojure/data.fressian "0.2.1"]
   {[org.fressian/fressian "0.6.6"] nil},
-  [org.clojure/data.json "0.2.6"] nil,
-  [org.clojure/tools.logging "0.4.1"] nil},
+  [org.clojure/data.json "0.2.6"] nil},
+ [log4j
+  "1.2.17"
+  :exclusions
+  [[javax.mail/mail]
+   [javax.jms/jms]
+   [com.sun.jmdk/jmxtools]
+   [com.sun.jmx/jmxri]]]
+ nil,
  [nrepl "0.7.0" :exclusions [[org.clojure/clojure]]] nil,
  [org.clojure/clojure "1.10.1"]
  {[org.clojure/core.specs.alpha "0.2.44"] nil,
   [org.clojure/spec.alpha "0.2.176"] nil},
+ [org.clojure/tools.logging "0.3.1"] nil,
+ [org.slf4j/slf4j-log4j12 "1.6.6"] {[org.slf4j/slf4j-api "1.6.6"] nil},
  [venantius/ultra "0.6.0"]
  {[grimradical/clj-semver "0.3.0" :exclusions [[org.clojure/clojure]]]
   nil,
