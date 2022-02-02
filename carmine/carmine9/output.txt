@@ -1,0 +1,11 @@
+Working with two sets
+Fill in sets s1 and s2
+[0 0 4 4 [d b a c] [f d e c]]
+Set operations
+union
+[6 [c d b f a e]]
+intersection
+[2 [d c]]
+diff
+[2 [b a] 2 [f e]]
+Done
