@@ -1,0 +1,6 @@
+Working with sorted sets
+Fill in sorted set s1
+[1 1 1 1]
+Retrieving items from sorted set s1
+[4 [d c b a] [c b]]
+Done
