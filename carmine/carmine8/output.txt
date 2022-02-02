@@ -1,0 +1,6 @@
+Working with two sets
+Set s1
+[1 1 1 1 [c d b a] 4]
+Set s2
+[4 [f e c d] 4]
+Done
