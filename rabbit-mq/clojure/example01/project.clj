@@ -7,4 +7,5 @@
                  [com.novemberain/langohr "5.0.0"]]
   :main ^:skip-aot example-01.core
   :target-path "target/%s"
+  :project-edn {:output-file "doc/details.clj"}
   :profiles {:uberjar {:aot :all}})
