@@ -18,5 +18,6 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [factual/durable-queue "0.1.5"]]
   :main ^:skip-aot durable-queue-3.core
+  :project-edn {:output-file "doc/details.clj"}
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
