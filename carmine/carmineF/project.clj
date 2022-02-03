@@ -7,5 +7,6 @@
                  [com.taoensso/carmine "3.1.0"]]
   :main ^:skip-aot carmineF.core
   :target-path "target/%s"
+  :project-edn {:output-file "doc/details.clj"}
   :profiles {:uberjar {:aot :all
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}})
