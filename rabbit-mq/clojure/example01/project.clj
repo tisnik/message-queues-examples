@@ -5,6 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [com.novemberain/langohr "5.0.0"]]
+  :plugins [[lein-codox "0.10.7"]
+            ]
   :main ^:skip-aot example-01.core
   :target-path "target/%s"
   :project-edn {:output-file "doc/details.clj"}
