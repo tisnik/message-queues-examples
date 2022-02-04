@@ -17,6 +17,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [factual/durable-queue "0.1.5"]]
+  :plugins [[lein-codox "0.10.7"]
+            ]
   :main ^:skip-aot durable-queue-9.core
   :project-edn {:output-file "doc/details.clj"}
   :target-path "target/%s"
