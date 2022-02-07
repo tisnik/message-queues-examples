@@ -18,6 +18,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [factual/durable-queue "0.1.5"]]
   :plugins [[lein-codox "0.10.7"]
+            [test2junit "1.1.0"]
             ]
   :main ^:skip-aot durable-queue-7.core
   :project-edn {:output-file "doc/details.clj"}
