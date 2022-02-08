@@ -19,6 +19,7 @@
                  [factual/durable-queue "0.1.5"]]
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
+            [lein-cloverage "1.0.7-SNAPSHOT"]
             ]
   :main ^:skip-aot durable-queue-6.core
   :project-edn {:output-file "doc/details.clj"}
