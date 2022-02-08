@@ -7,6 +7,7 @@
                  [com.novemberain/langohr "5.0.0"]]
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
+            [lein-cloverage "1.0.7-SNAPSHOT"]
             ]
   :main ^:skip-aot example-01.core
   :target-path "target/%s"
