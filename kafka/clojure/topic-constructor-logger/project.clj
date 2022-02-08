@@ -20,6 +20,7 @@
                  [ch.qos.logback/logback-classic "1.1.3"]]
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
+            [lein-cloverage "1.0.7-SNAPSHOT"]
             ]
   :main ^:skip-aot topic-constructor.core
   :target-path "target/%s"
