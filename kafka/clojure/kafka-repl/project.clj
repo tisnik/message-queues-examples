@@ -20,6 +20,7 @@
   :plugins [[lein-kibit "0.1.8"]
             [test2junit "1.1.0"]
             [lein-cloverage "1.0.7-SNAPSHOT"]
+            [lein-clean-m2 "0.1.2"]
             [lein-marginalia "0.9.1"]]
   :main ^:skip-aot kafka-repl.core
   :target-path "target/%s"
