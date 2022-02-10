@@ -22,6 +22,7 @@
             [test2junit "1.1.0"]
             [lein-cloverage "1.0.7-SNAPSHOT"]
             [lein-kibit "0.1.8"]
+            [lein-clean-m2 "0.1.2"]
             ]
   :main ^:skip-aot topic-constructor.core
   :target-path "target/%s"
