@@ -20,6 +20,7 @@
   :plugins [[lein-codox "0.10.7"]
             [test2junit "1.1.0"]
             [lein-cloverage "1.0.7-SNAPSHOT"]
+            [lein-clean-m2 "0.1.2"]
             ]
   :main ^:skip-aot produce-messages-2.core
   :target-path "target/%s"
