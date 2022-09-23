@@ -1,14 +1,14 @@
 # vim: set fileencoding=utf-8
 
-broker_url = 'redis://localhost:6379/0'
-result_backend = 'redis://localhost:6379/0'
+broker_url = "redis://localhost:6379/0"
+result_backend = "redis://localhost:6379/0"
 
-task_serializer = 'json'
-result_serializer = 'json'
-accept_content = ['json']
-timezone = 'Europe/Oslo'
+task_serializer = "json"
+result_serializer = "json"
+accept_content = ["json"]
+timezone = "Europe/Oslo"
 enable_utc = True
 
-task_default_queue = 'celery'
+task_default_queue = "celery"
 
 worker_log_color = True
