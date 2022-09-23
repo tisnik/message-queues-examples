@@ -3,9 +3,9 @@
 from time import sleep
 from celery import Celery
 
-app = Celery('tasks')
+app = Celery("tasks")
 
-app.config_from_object('celeryconfig')
+app.config_from_object("celeryconfig")
 
 
 @app.task
