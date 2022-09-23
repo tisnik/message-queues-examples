@@ -5,16 +5,16 @@ from datetime import datetime
 from celery import Celery
 from celery.schedules import crontab
 
-app = Celery('tasks')
+app = Celery("tasks")
 
-app.config_from_object('celeryconfig')
+app.config_from_object("celeryconfig")
 
 
 app.conf.beat_schedule = {
-    'run-every-two-seconds': {
-        'task': 'tasks.periodic_task',
-        'schedule': 2,
-        'args': (),
+    "run-every-two-seconds": {
+        "task": "tasks.periodic_task",
+        "schedule": 2,
+        "args": (),
     },
 }
 
