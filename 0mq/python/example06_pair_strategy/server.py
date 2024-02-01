@@ -8,9 +8,9 @@
 #
 # ---------------------------------------------------------------------
 
-import zmq
 import time
 
+import zmq
 
 CONNECTION_TYPE = zmq.PAIR
 PORT = 5556
