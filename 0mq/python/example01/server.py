@@ -8,8 +8,9 @@
 #
 # ---------------------------------------------------------------------
 
-import zmq
 import time
+
+import zmq
 
 
 def bind(port, connection_type):
