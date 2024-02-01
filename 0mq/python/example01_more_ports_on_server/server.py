@@ -1,5 +1,6 @@
-import zmq
 import time
+
+import zmq
 
 
 def bind(port1, port2, connection_type):
