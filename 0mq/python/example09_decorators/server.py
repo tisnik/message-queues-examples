@@ -1,7 +1,7 @@
-import zmq
-from zmq.decorators import context
 import time
 
+import zmq
+from zmq.decorators import context
 
 CONNECTION_TYPE = zmq.PAIR
 PORT = 5556
