@@ -8,8 +8,9 @@
 #
 # ---------------------------------------------------------------------
 
-import zmq
 from math import factorial
+
+import zmq
 
 
 def bind(port, connection_type):
