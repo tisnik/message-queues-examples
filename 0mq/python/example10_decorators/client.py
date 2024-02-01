@@ -1,7 +1,6 @@
 import zmq
 from zmq.decorators import context, socket
 
-
 CONNECTION_TYPE = zmq.PAIR
 PORT = 5556
 
