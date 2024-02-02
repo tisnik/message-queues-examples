@@ -1,7 +1,7 @@
-import zmq
-from zmq.decorators import context, socket
 from sys import argv, exit
 
+import zmq
+from zmq.decorators import context, socket
 
 CONNECTION_TYPE = zmq.SUB
 PORT = 5557
