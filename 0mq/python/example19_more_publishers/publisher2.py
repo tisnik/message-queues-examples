@@ -1,9 +1,8 @@
+from os import getpid
+from time import sleep
+
 import zmq
 from zmq.decorators import context, socket
-
-from time import sleep
-from os import getpid
-
 
 CONNECTION_TYPE = zmq.PUB
 PORT = 5557
