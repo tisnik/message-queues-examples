@@ -1,6 +1,7 @@
+from math import factorial
+
 import zmq
 from zmq.decorators import context, socket
-from math import factorial
 
 CONNECTION_TYPE = zmq.REP
 PORT = 5557
