@@ -1,7 +1,7 @@
-import zmq
-from zmq.decorators import context, socket
 from time import sleep
 
+import zmq
+from zmq.decorators import context, socket
 
 CONNECTION_TYPE = zmq.PULL
 PORT = 5557
