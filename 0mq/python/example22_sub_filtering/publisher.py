@@ -1,9 +1,8 @@
+from sys import argv, exit
+from time import sleep
+
 import zmq
 from zmq.decorators import context, socket
-
-from time import sleep
-from sys import argv, exit
-
 
 CONNECTION_TYPE = zmq.PUB
 PORT = 5556
