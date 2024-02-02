@@ -1,7 +1,7 @@
-import zmq
-from zmq.decorators import context, socket
 from os import getpid
 
+import zmq
+from zmq.decorators import context, socket
 
 IN_PORT = 5557
 OUT_PORT = 5558
