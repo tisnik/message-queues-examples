@@ -1,5 +1,6 @@
-import zmq
 from math import factorial
+
+import zmq
 
 PORT = 5557
 
