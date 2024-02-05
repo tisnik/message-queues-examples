@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import time
-import stomp
 
+import stomp
 
 destination1 = "/topic/event"
 destination2 = "/topic/event2"
