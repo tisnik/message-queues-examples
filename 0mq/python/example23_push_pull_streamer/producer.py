@@ -1,7 +1,7 @@
-import zmq
-from zmq.decorators import context, socket
 import time
 
+import zmq
+from zmq.decorators import context, socket
 
 CONNECTION_TYPE = zmq.PUSH
 PORT = 5550
