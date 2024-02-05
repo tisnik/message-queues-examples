@@ -1,7 +1,8 @@
+import time
+
 import zmq
 from zmq.decorators import context, socket
 from zmq.devices.basedevice import ProcessDevice
-import time
 
 PULL_PORT = 5550
 PUSH_PORT = 5551
