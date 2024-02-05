@@ -1,7 +1,8 @@
+from math import factorial
+
 import zmq
 from zmq.decorators import context
 from zmq.devices.basedevice import ProcessDevice
-from math import factorial
 
 XREP_PORT = 5556
 XREQ_PORT = 5557
