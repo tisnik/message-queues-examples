@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import time
-import stomp
-
 from queue import Queue
+
+import stomp
 
 
 class SimpleListener(object):
