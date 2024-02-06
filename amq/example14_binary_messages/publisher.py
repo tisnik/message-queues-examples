@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import time
-import stomp
 import base64
+import time
 
+import stomp
 
 destination = "/queue/test"
 
