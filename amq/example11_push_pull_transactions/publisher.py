@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 import time
-import stomp
 
+import stomp
 
 destination1 = "/queue/test"
 destination2 = "/queue/test2"
