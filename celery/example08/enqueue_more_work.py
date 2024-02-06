@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8
 
-from tasks import red_task, green_task, blue_task
+from tasks import blue_task, green_task, red_task
 
 for _ in range(25):
     red_task.apply_async(queue="red_queue")
