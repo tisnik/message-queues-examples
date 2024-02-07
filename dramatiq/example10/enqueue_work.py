@@ -2,12 +2,11 @@
 # vim: set fileencoding=utf-8
 
 import time
+
+from test_worker_10 import setup_broker_and_backend, test_worker_A, test_worker_B, test_worker_C
+
 import dramatiq
-
 from dramatiq.brokers.redis import RedisBroker
-
-from test_worker_10 import test_worker_A, test_worker_B, test_worker_C, setup_broker_and_backend
-
 
 setup_broker_and_backend()
 
