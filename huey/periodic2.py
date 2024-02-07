@@ -1,7 +1,6 @@
 """Periodicky se opakující úloha."""
 
-from huey import crontab
-from huey import RedisHuey
+from huey import RedisHuey, crontab
 
 huey = RedisHuey()
 
