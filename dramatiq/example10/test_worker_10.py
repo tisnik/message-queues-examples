@@ -5,8 +5,8 @@ import time
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
-from dramatiq.results.backends import RedisBackend
 from dramatiq.results import Results
+from dramatiq.results.backends import RedisBackend
 
 
 def setup_broker_and_backend():
