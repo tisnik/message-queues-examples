@@ -1,8 +1,8 @@
 """Několik různých úloh."""
 
-from huey import RedisHuey
-
 from time import sleep
+
+from huey import RedisHuey
 
 huey = RedisHuey()
 
