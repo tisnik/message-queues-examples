@@ -1,6 +1,6 @@
 """Vytvoření různých úloh."""
 
-from three_tasks import add, slow_add, mul
+from three_tasks import add, mul, slow_add
 
 rs = []
 
