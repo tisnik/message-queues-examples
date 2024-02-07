@@ -1,8 +1,8 @@
 """Úloha pro součet dvou hodnot."""
 
-from huey import RedisHuey
-
 from time import sleep
+
+from huey import RedisHuey
 
 huey = RedisHuey()
 
