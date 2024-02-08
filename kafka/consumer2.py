@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+
 from kafka import KafkaConsumer, TopicPartition
 
 server = "localhost:9092"
