@@ -1,7 +1,8 @@
 # vim: set fileencoding=utf-8
 
-from nanomsg import Socket, RESPONDENT
-from random import seed, randint
+from random import randint, seed
+
+from nanomsg import RESPONDENT, Socket
 
 URL = "ipc:///tmp/example11"
 
