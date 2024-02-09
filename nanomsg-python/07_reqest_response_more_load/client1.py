@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8
 
-from nanomsg import Socket, REQ
+from nanomsg import REQ, Socket
 
 URL = "ipc:///tmp/example7"
 
