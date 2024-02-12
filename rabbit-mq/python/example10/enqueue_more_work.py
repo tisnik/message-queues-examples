@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf-8
 
-from sys import exit, argv
-from rabbitmq_connect import connect, open_channel, use_topic_exchange, bind_queue
+from sys import argv, exit
+
+from rabbitmq_connect import bind_queue, connect, open_channel, use_topic_exchange
 
 
 def run_producer():
