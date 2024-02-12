@@ -1,6 +1,8 @@
-import nsq
-import tornado.ioloop
 import time
+
+import tornado.ioloop
+
+import nsq
 
 cnt = 1
 
