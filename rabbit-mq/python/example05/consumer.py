@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from time import sleep
+
 from rabbitmq_connect import connect
 
 connection, channel = connect()
