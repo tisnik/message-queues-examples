@@ -2,6 +2,7 @@
 # vim: set fileencoding=utf-8
 
 from time import sleep
+
 from rabbitmq_connect import connect
 
 connection, channel = connect()
