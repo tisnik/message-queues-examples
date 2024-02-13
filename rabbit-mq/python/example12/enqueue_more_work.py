@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf-8
 
-from sys import exit, argv
-from rabbitmq_connect import connect, open_channel
+from sys import argv, exit
+
 from pika.spec import BasicProperties
+from rabbitmq_connect import connect, open_channel
 
 
 def run_producer():
