@@ -58,7 +58,7 @@ def start_server(context, port):
             n = int(request)
             fact = factorial(n)
             send_response(socket, "{n}! = {f}".format(n=n, f=fact))
-        except Exception as e:
+        except Exception:
             send_response(socket, "Wrong input")
 
 
