@@ -4,10 +4,9 @@
 # https://www.root.cz/clanky/pouziti-nastroje-rq-redis-queue-pro-spravu-uloh-zpracovavanych-na-pozadi/
 
 from redis import Redis
-from rq import Queue
-
 from worker import do_work
 
+from rq import Queue
 
 q_low = Queue("low", connection=Redis())
 q_high = Queue("high", connection=Redis())
