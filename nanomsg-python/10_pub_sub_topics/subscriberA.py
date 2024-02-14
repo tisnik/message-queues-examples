@@ -1,6 +1,5 @@
 # vim: set fileencoding=utf-8
 
-from time import sleep
 
 from nanomsg import SUB, SUB_SUBSCRIBE, Socket
 
