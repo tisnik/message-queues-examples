@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf-8
 
-import time
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
