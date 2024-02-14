@@ -4,7 +4,6 @@ from datetime import datetime
 from time import sleep
 
 from celery import Celery
-from celery.schedules import crontab
 
 app = Celery("tasks")
 
