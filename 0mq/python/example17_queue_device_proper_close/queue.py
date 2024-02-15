@@ -10,7 +10,7 @@ XREQ_PORT = 5557
 @socket(zmq.XREQ)
 def create_queue(xrep_port, xreq_port, context, frontend, backend):
     """Vytvoření fronty."""
-    context = zmq.Context()
+    zmq.Context()
 
     address = "tcp://*:{port}".format(port=xrep_port)
     frontend.bind(address)
