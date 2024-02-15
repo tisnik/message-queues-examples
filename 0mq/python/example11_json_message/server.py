@@ -11,11 +11,7 @@ PORT = 5556
 def send_json_message(socket, message, i, timestamp):
     """Poslání zprávy."""
     print("Sending message #{i}'".format(i=i))
-    payload = {
-        "message": message,
-        "number": i,
-        "timestamp": str(timestamp)
-    }
+    payload = {"message": message, "number": i, "timestamp": str(timestamp)}
     socket.send_json(payload)
 
 
