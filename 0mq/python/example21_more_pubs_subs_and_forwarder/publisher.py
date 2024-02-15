@@ -35,7 +35,7 @@ def start_publisher(name, delay, port, context, socket):
 
 
 if len(argv) <= 2:
-    print('Please provide publisher name and sleep amount on the CLI')
+    print("Please provide publisher name and sleep amount on the CLI")
     exit(1)
 
 
