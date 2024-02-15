@@ -29,7 +29,7 @@ def start_subscriber(filter, port, context, socket):
 
 
 if len(argv) <= 1:
-    print('Please provide filter on the CLI')
+    print("Please provide filter on the CLI")
     exit(1)
 
 
