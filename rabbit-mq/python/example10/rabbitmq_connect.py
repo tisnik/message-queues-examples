@@ -4,8 +4,7 @@ import pika
 
 
 def connect(where='localhost'):
-    connection = pika.BlockingConnection(pika.ConnectionParameters(where))
-    return connection
+    return pika.BlockingConnection(pika.ConnectionParameters(where))
 
 
 def open_channel(connection, queue_name='test'):
