@@ -15,8 +15,8 @@ conn.connect(login="admin", passcode="admin")
 
 for i in range(0, MESSAGES):
     message = "Hello world #{i}!".format(i=i)
-    conn.send(destination1, message, persistent='true')
-    conn.send(destination2, message, persistent='true')
+    conn.send(destination1, message, persistent="true")
+    conn.send(destination2, message, persistent="true")
 
 
 conn.disconnect()
