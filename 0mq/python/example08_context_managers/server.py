@@ -15,15 +15,14 @@ def send_message(socket, message):
 def start_server():
     """Spuštění serveru."""
 
-    with zmq.Context() as context:
-        with context.socket(CONNECTION_TYPE) as socket:
-            address = "tcp://*:{port}".format(port=PORT)
-            socket.bind(address)
-            print("Bound to address {a}".format(a=address))
+    with zmq.Context() as context, context.socket(CONNECTION_TYPE) as socket:
+        address = "tcp://*:{port}".format(port=PORT)
+        socket.bind(address)
+        print("Bound to address {a}".format(a=address))
 
-            for i in range(10):
-                send_message(socket, "Message #{i}".format(i=i))
-                time.sleep(1)
+        for i in range(10):
+            send_message(socket, "Message #{i}".format(i=i))
+            time.sleep(1)
 
 
 start_server()
