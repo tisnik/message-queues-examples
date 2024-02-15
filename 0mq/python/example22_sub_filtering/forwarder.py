@@ -10,7 +10,7 @@ PUB_PORT = 5557
 @socket(zmq.PUB)
 def create_queue(sub_port, pub_port, context, frontend, backend):
     """Vytvoření forwarderu."""
-    context = zmq.Context()
+    zmq.Context()
 
     address = "tcp://*:{port}".format(port=sub_port)
     frontend.bind(address)
