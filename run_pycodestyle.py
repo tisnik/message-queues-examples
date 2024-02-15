@@ -21,7 +21,7 @@ import pycodestyle
 
 
 def main():
-    files = list(Path(".").rglob("*.py"))
+    files = list(Path().rglob("*.py"))
 
     style = pycodestyle.StyleGuide(quiet=False, config_file="setup.cfg")
     result = style.check_files(files)
