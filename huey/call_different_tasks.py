@@ -7,9 +7,7 @@ rs = []
 print("Queueing...")
 
 for i in range(1, 11):
-    rs.append(add(i, i))
-    rs.append(slow_add(i, i))
-    rs.append(mul(i, i))
+    rs.extend((add(i, i), slow_add(i, i), mul(i, i)))
 
 print("Done, waiting for results...")
 
