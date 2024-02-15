@@ -1,4 +1,3 @@
-import time
 
 import tornado.ioloop
 
