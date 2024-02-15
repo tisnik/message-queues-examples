@@ -17,10 +17,11 @@ def start_client(context, socket):
     print("Waiting for message...")
     while True:
         payload = socket.recv_json()
-        print("Received message #{i} with timestamp {t}: '{m}'".format(
-            i=payload["number"],
-            t=payload["timestamp"],
-            m=payload["message"]))
+        print(
+            "Received message #{i} with timestamp {t}: '{m}'".format(
+                i=payload["number"], t=payload["timestamp"], m=payload["message"]
+            )
+        )
 
 
 start_client()
