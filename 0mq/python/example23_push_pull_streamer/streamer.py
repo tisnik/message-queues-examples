@@ -10,7 +10,7 @@ PUSH_PORT = 5551
 @socket(zmq.PUSH)
 def create_streamer(pull_port, push_port, context, frontend, backend):
     """Vytvoření streameru."""
-    context = zmq.Context()
+    zmq.Context()
 
     address = "tcp://*:{port}".format(port=pull_port)
     frontend.bind(address)
