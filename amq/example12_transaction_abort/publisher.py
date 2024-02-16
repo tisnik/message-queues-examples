@@ -20,8 +20,8 @@ print(transaction)
 for i in range(0, MESSAGES):
     message = "Hello world #{i}!".format(i=i)
     print("Publishing message: " + message)
-    conn.send(destination1, message, persistent='true', transaction=transaction)
-    conn.send(destination2, message, persistent='true', transaction=transaction)
+    conn.send(destination1, message, persistent="true", transaction=transaction)
+    conn.send(destination2, message, persistent="true", transaction=transaction)
     time.sleep(1)
     print("Done")
 
