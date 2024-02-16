@@ -7,7 +7,6 @@ TARGET = "topic://event"
 
 
 class Publisher(MessagingHandler):
-
     def __init__(self, url, target):
         super(Publisher, self).__init__()
         self.url = url
