@@ -20,7 +20,11 @@ setup_broker_and_backend()
 
 
 def worker(name, parameter):
-    print("Worker {w}: working, received parameter: {param}".format(w=name, param=parameter))
+    print(
+        "Worker {w}: working, received parameter: {param}".format(
+            w=name, param=parameter
+        )
+    )
     print("Worker {w}: done".format(w=name))
 
 
