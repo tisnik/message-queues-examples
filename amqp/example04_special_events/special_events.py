@@ -9,12 +9,11 @@ TOPICS = (
     "ActiveMQ.Advisory.MasterBroker",
     "ActiveMQ.Advisory.Producer.Queue.test",
     "ActiveMQ.Advisory.Queue",
-    "ActiveMQ.Advisory.Topic"
+    "ActiveMQ.Advisory.Topic",
 )
 
 
 class Subscriber(MessagingHandler):
-
     def __init__(self, url):
         super(Subscriber, self).__init__()
         self.url = url
