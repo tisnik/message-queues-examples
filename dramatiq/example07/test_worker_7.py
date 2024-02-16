@@ -17,7 +17,11 @@ setup_broker()
 
 
 def worker(name, parameter):
-    print("Worker {w}: working, received parameter: {param}".format(w=name, param=parameter))
+    print(
+        "Worker {w}: working, received parameter: {param}".format(
+            w=name, param=parameter
+        )
+    )
     time.sleep(1)
     print("Worker {w}: done".format(w=name))
 
