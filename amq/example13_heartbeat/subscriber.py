@@ -6,7 +6,6 @@ import stomp
 
 
 class SimpleListener:
-
     def __init__(self, conn):
         self.conn = conn
 
@@ -29,11 +28,11 @@ class SimpleListener:
 destination = "/topic/event"
 
 conn = stomp.Connection([("localhost", 61613)], heartbeats=(0, 1000))
-conn.set_listener('', SimpleListener(conn))
+conn.set_listener("", SimpleListener(conn))
 conn.start()
 
 conn.connect(login="admin", passcode="admin")
-conn.subscribe(id='simple_listener', destination=destination, ack='auto')
+conn.subscribe(id="simple_listener", destination=destination, ack="auto")
 
 print("Waiting for messages...")
 
