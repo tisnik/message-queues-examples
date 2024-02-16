@@ -6,7 +6,6 @@ SOURCE = "topic://event"
 
 
 class Subscriber(MessagingHandler):
-
     def __init__(self, url, source):
         super(Subscriber, self).__init__()
         self.url = url
