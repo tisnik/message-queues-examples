@@ -10,15 +10,17 @@ def run_producer():
     channel = open_channel(connection)
 
     use_fanout(channel)
-    bind_queue(channel, 'fronta1')
-    bind_queue(channel, 'fronta2')
-    bind_queue(channel, 'fronta3')
+    bind_queue(channel, "fronta1")
+    bind_queue(channel, "fronta2")
+    bind_queue(channel, "fronta3")
 
-    channel.basic_publish(exchange='fanout_exchange',
-                          routing_key='',
-                          body='Hello World!')
+    channel.basic_publish(
+        exchange="fanout_exchange", routing_key="", body="Hello World!"
+    )
 
-    print('Sent \'Hello World!\' message into three queues "fronta1", "fronta2", and "fronta3"')
+    print(
+        'Sent \'Hello World!\' message into three queues "fronta1", "fronta2", and "fronta3"'
+    )
 
     connection.close()
 
