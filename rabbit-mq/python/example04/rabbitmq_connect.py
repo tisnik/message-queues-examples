@@ -1,7 +1,7 @@
 import pika
 
 
-def connect(where='localhost', queue_name='test'):
+def connect(where="localhost", queue_name="test"):
     connection = pika.BlockingConnection(pika.ConnectionParameters(where))
     channel = connection.channel()
 
