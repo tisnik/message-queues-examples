@@ -18,16 +18,16 @@ def run_consumer(queue_name):
     connection = connect()
     channel = open_channel(connection, queue_name)
     channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(on_receive,
-                          queue=queue_name,
-                          no_ack=False)
-    print('Waiting for messages in queue "{q}". To exit press CTRL+C'.format(q=queue_name))
+    channel.basic_consume(on_receive, queue=queue_name, no_ack=False)
+    print(
+        'Waiting for messages in queue "{q}". To exit press CTRL+C'.format(q=queue_name)
+    )
     print("...")
     channel.start_consuming()
 
 
 if len(argv) <= 1:
-    print('Please provide queue name on the CLI')
+    print("Please provide queue name on the CLI")
     exit(1)
 
 run_consumer(argv[1])
