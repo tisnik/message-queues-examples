@@ -14,10 +14,8 @@ def on_receive(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-channel.basic_consume(on_receive,
-                      queue='test',
-                      no_ack=False)
+channel.basic_consume(on_receive, queue="test", no_ack=False)
 
-print('Waiting for messages. To exit press CTRL+C')
+print("Waiting for messages. To exit press CTRL+C")
 print("...")
 channel.start_consuming()
