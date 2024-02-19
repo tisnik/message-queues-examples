@@ -16,10 +16,8 @@ def on_receive(ch, method, properties, body):
 
 
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(on_receive,
-                      queue='test',
-                      no_ack=False)
+channel.basic_consume(on_receive, queue="test", no_ack=False)
 
-print('Waiting for messages. To exit press CTRL+C')
+print("Waiting for messages. To exit press CTRL+C")
 print("...")
 channel.start_consuming()
