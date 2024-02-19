@@ -14,10 +14,8 @@ def on_receive(ch, method, properties, body):
     print("Done processing %r" % body)
 
 
-channel.basic_consume(on_receive,
-                      queue='test',
-                      no_ack=True)
+channel.basic_consume(on_receive, queue="test", no_ack=True)
 
-print('Waiting for messages. To exit press CTRL+C')
+print("Waiting for messages. To exit press CTRL+C")
 print("...")
 channel.start_consuming()
