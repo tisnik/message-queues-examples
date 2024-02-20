@@ -14,7 +14,7 @@ def delete_queue(queue_name):
 
 
 if len(argv) <= 1:
-    print('Please provide queue name on the CLI')
+    print("Please provide queue name on the CLI")
     exit(1)
 
 delete_queue(argv[1])
